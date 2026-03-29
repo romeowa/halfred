@@ -1,3 +1,4 @@
+import Carbon
 import SwiftUI
 
 enum SearchMode {
@@ -192,6 +193,30 @@ struct SearchView: View {
             matchingCommands = commandRegistry.allCommands()
             matchingApps = []
             selectedIndex = -1
+            switchToEnglishInput()
+        }
+    }
+
+    // MARK: - Input Source
+
+    private func switchToEnglishInput() {
+        guard let sources = TISCreateInputSourceList(nil, false)?.takeRetainedValue() as? [TISInputSource] else { return }
+        for source in sources {
+            guard let categoryRef = TISGetInputSourceProperty(source, kTISPropertyInputSourceCategory),
+                  let category = Unmanaged<CFString>.fromOpaque(categoryRef).takeUnretainedValue() as String? as String?,
+                  category == kTISCategoryKeyboardInputSource as String else { continue }
+
+            guard let selectableRef = TISGetInputSourceProperty(source, kTISPropertyInputSourceIsSelectCapable) else { continue }
+            let selectable = Unmanaged<CFBoolean>.fromOpaque(selectableRef).takeUnretainedValue()
+            guard CFBooleanGetValue(selectable) else { continue }
+
+            guard let idRef = TISGetInputSourceProperty(source, kTISPropertyInputSourceID),
+                  let sourceID = Unmanaged<CFString>.fromOpaque(idRef).takeUnretainedValue() as String? as String? else { continue }
+
+            if sourceID.contains("ABC") || sourceID.contains("US") || sourceID.contains("com.apple.keylayout.ABC") {
+                TISSelectInputSource(source)
+                return
+            }
         }
     }
 
