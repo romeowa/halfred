@@ -36,7 +36,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Show Halfred", action: #selector(toggleSearchPanel), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "Reload Commands", action: #selector(reloadCommands), keyEquivalent: "r"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit Halfred", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
@@ -67,10 +66,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager.register(id: 12, keyCode: 126, modifiers: UInt32(optionKey | cmdKey)) { [weak self] in
             self?.windowManager.snapFull()
         }
+        // ⌥⌘↓ Move to next screen
+        hotkeyManager.register(id: 13, keyCode: 125, modifiers: UInt32(optionKey | cmdKey)) { [weak self] in
+            self?.windowManager.moveToNextScreen()
+        }
     }
 
     private func setupSettingsWindow() {
-        settingsWindow = SettingsWindow(commandRegistry: commandRegistry, windowManager: windowManager)
+        settingsWindow = SettingsWindow(commandRegistry: commandRegistry, windowManager: windowManager, appScanner: appScanner)
     }
 
     @objc private func toggleSearchPanel() {
@@ -81,7 +84,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow.show()
     }
 
-    @objc private func reloadCommands() {
-        commandRegistry.loadCommands()
-    }
 }

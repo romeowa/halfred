@@ -42,6 +42,64 @@ final class WindowManager {
         ))
     }
 
+    func moveToNextScreen() {
+        guard isEnabled else { return }
+        let screens = NSScreen.screens
+        guard screens.count >= 2 else { return }
+        guard let currentScreen = screenForFrontmostWindow() else { return }
+
+        // Find the next screen in the list
+        let currentIndex = screens.firstIndex(of: currentScreen) ?? 0
+        let nextScreen = screens[(currentIndex + 1) % screens.count]
+
+        // Get current window frame in AX coordinates, then map relative position to next screen
+        let srcVisible = currentScreen.visibleFrame
+        let dstVisible = nextScreen.visibleFrame
+
+        guard let (pos, size) = getFrontmostWindowFrame() else { return }
+
+        // Convert AX position to AppKit coordinates
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let appKitY = primaryHeight - pos.y - size.height
+
+        // Calculate relative position within source screen's visible frame
+        let relX = (pos.x - srcVisible.origin.x) / srcVisible.width
+        let relY = (appKitY - srcVisible.origin.y) / srcVisible.height
+        let relW = size.width / srcVisible.width
+        let relH = size.height / srcVisible.height
+
+        // Apply relative position to destination screen
+        let newW = min(relW * dstVisible.width, dstVisible.width)
+        let newH = min(relH * dstVisible.height, dstVisible.height)
+        let newX = dstVisible.origin.x + relX * dstVisible.width
+        let newY = dstVisible.origin.y + relY * dstVisible.height
+
+        setFrontmostWindowFrame(CGRect(x: newX, y: newY, width: newW, height: newH))
+    }
+
+    /// Returns the frontmost window's (position, size) in AX coordinates (top-left origin).
+    private func getFrontmostWindowFrame() -> (CGPoint, CGSize)? {
+        guard AXIsProcessTrusted(),
+              let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
+
+        let appRef = AXUIElementCreateApplication(app.processIdentifier)
+        var windowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute as CFString, &windowValue) == .success,
+              let window = windowValue else { return nil }
+
+        var posValue: CFTypeRef?
+        var sizeValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window as! AXUIElement, kAXPositionAttribute as CFString, &posValue) == .success,
+              AXUIElementCopyAttributeValue(window as! AXUIElement, kAXSizeAttribute as CFString, &sizeValue) == .success else { return nil }
+
+        var pos = CGPoint.zero
+        var size = CGSize.zero
+        AXValueGetValue(posValue as! AXValue, .cgPoint, &pos)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+        return (pos, size)
+    }
+
     /// Returns snap widths: [minimum window width, 1/2 screen, 2/3 screen]
     private func snapWidths() -> [CGFloat] {
         guard let screen = screenForFrontmostWindow() else { return [] }
@@ -53,7 +111,7 @@ final class WindowManager {
         if let minW = getMinWindowWidth(), minW > 0, minW < half - 1 {
             widths.append(minW)
         } else {
-            widths.append(screenWidth / 5.0)
+            widths.append(screenWidth / 3.0)
         }
         widths.append(half)
         widths.append(twoThirds)

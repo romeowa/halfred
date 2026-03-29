@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var commandRegistry: CommandRegistry
     let windowManager: WindowManager
+    let appScanner: AppScanner
     @State private var editingCommand: CommandEntry?
     @State private var isAdding = false
     @State private var selectedTab = 0
@@ -55,6 +56,7 @@ struct SettingsView: View {
             CommandEditView(
                 title: "Add Command",
                 command: CommandEntry(type: "web", keyword: "", name: "", url: "", appName: nil, script: nil, path: nil),
+                appScanner: appScanner,
                 onSave: { newCommand in
                     commandRegistry.addCommand(newCommand)
                     isAdding = false
@@ -66,6 +68,7 @@ struct SettingsView: View {
             CommandEditView(
                 title: "Edit Command",
                 command: command,
+                appScanner: appScanner,
                 onSave: { updated in
                     commandRegistry.updateCommand(oldKeyword: command.keyword, with: updated)
                     editingCommand = nil
@@ -266,6 +269,12 @@ struct WindowTab: View {
                             title: "Fullscreen",
                             description: "Expand to fill the screen",
                             keys: ["⌥", "⌘", "↑"],
+                            isFirst: false
+                        )
+                        SnapShortcutRow(
+                            title: "Move to Next Screen",
+                            description: "Move window between monitors",
+                            keys: ["⌥", "⌘", "↓"],
                             isFirst: false
                         )
                     }
@@ -558,6 +567,7 @@ struct CommandRow: View {
 struct CommandEditView: View {
     let title: String
     @State var command: CommandEntry
+    let appScanner: AppScanner
     let onSave: (CommandEntry) -> Void
     let onCancel: () -> Void
 
@@ -603,10 +613,13 @@ struct CommandEditView: View {
                             set: { command.url = $0.isEmpty ? nil : $0 }
                         ), placeholder: "https://google.com/search?q={query}")
                     case "app":
-                        DarkTextField(label: "APP NAME", text: Binding(
-                            get: { command.appName ?? "" },
-                            set: { command.appName = $0.isEmpty ? nil : $0 }
-                        ), placeholder: "e.g. Safari, Terminal")
+                        AppPickerField(
+                            appName: Binding(
+                                get: { command.appName ?? "" },
+                                set: { command.appName = $0.isEmpty ? nil : $0 }
+                            ),
+                            appScanner: appScanner
+                        )
                     case "shell":
                         DarkTextField(label: "SCRIPT", text: Binding(
                             get: { command.script ?? "" },
@@ -693,6 +706,213 @@ struct TypeChip: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct AppPickerField: View {
+    @Binding var appName: String
+    let appScanner: AppScanner
+    @State private var searchText = ""
+    @State private var isShowingPicker = false
+    @State private var matchingApps: [ScannedApp] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("APP NAME")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(Theme.textMuted)
+                .tracking(1)
+
+            // Selected app display / search field
+            HStack(spacing: 8) {
+                if !appName.isEmpty && !isShowingPicker {
+                    // Show selected app
+                    HStack(spacing: 8) {
+                        if appName.hasSuffix(".app") {
+                            Image(nsImage: NSWorkspace.shared.icon(forFile: appName))
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                        } else {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(Theme.typeApp)
+                        }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(displayName(for: appName))
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.textPrimary)
+                            if appName.hasSuffix(".app") {
+                                Text(appName)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(Theme.textMuted)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Spacer()
+                        Button(action: {
+                            appName = ""
+                            searchText = ""
+                            isShowingPicker = true
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.textMuted)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Theme.surface)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Theme.accent.opacity(0.3), lineWidth: 1)
+                    )
+                    .onTapGesture {
+                        searchText = ""
+                        isShowingPicker = true
+                    }
+                } else {
+                    // Search field
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textMuted)
+                        TextField("Search apps...", text: $searchText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 14))
+                            .foregroundColor(Theme.textPrimary)
+                            .onAppear { isShowingPicker = true }
+                            .onChange(of: searchText) { newValue in
+                                matchingApps = appScanner.search(prefix: newValue)
+                            }
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Theme.surface)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isShowingPicker ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
+                    )
+                }
+            }
+
+            // App list dropdown
+            if isShowingPicker {
+                VStack(spacing: 0) {
+                    ScrollView {
+                        LazyVStack(spacing: 2) {
+                            if matchingApps.isEmpty && !searchText.isEmpty {
+                                Text("No apps found")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Theme.textMuted)
+                                    .padding(.vertical, 12)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                ForEach(matchingApps, id: \.name) { app in
+                                    appRow(app: app)
+                                        .onTapGesture {
+                                            appName = app.name
+                                            searchText = ""
+                                            isShowingPicker = false
+                                        }
+                                }
+                            }
+                        }
+                        .padding(4)
+                    }
+                    .frame(maxHeight: 160)
+
+                    Rectangle()
+                        .fill(Theme.border)
+                        .frame(height: 1)
+
+                    // Browse button
+                    Button(action: browseForApp) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 11))
+                            Text("Browse...")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(Theme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering {
+                            NSCursor.pointingHand.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Theme.surface)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Theme.border, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private func browseForApp() {
+        let panel = NSOpenPanel()
+        panel.title = "Select Application"
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+
+        if panel.runModal() == .OK, let url = panel.url {
+            appName = url.path
+            searchText = ""
+            isShowingPicker = false
+        }
+    }
+
+    private func displayName(for name: String) -> String {
+        if name.hasSuffix(".app") {
+            return URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
+        }
+        return name
+    }
+
+    private func appRow(app: ScannedApp) -> some View {
+        HStack(spacing: 10) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
+                .resizable()
+                .frame(width: 24, height: 24)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(app.name)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Theme.textPrimary)
+                Text(app.url.path)
+                    .font(.system(size: 10))
+                    .foregroundColor(Theme.textMuted)
+                    .lineLimit(1)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            if hovering {
+                NSCursor.pointingHand.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
     }
 }
 

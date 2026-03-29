@@ -6,7 +6,10 @@ struct AppLaunchCommand: CommandExecutor {
         guard let appName = entry.appName else { return false }
 
         let appURL: URL?
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appName) {
+        // Check if appName is a direct path to a .app bundle
+        if appName.hasSuffix(".app"), FileManager.default.fileExists(atPath: appName) {
+            appURL = URL(fileURLWithPath: appName)
+        } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: appName) {
             appURL = url
         } else {
             // Try finding by name in /Applications

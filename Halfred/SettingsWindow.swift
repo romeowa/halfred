@@ -5,10 +5,12 @@ final class SettingsWindow {
     private var window: NSWindow?
     private let commandRegistry: CommandRegistry
     private let windowManager: WindowManager
+    private let appScanner: AppScanner
 
-    init(commandRegistry: CommandRegistry, windowManager: WindowManager) {
+    init(commandRegistry: CommandRegistry, windowManager: WindowManager, appScanner: AppScanner) {
         self.commandRegistry = commandRegistry
         self.windowManager = windowManager
+        self.appScanner = appScanner
     }
 
     func show() {
@@ -19,7 +21,7 @@ final class SettingsWindow {
         }
 
         // Recreate window to ensure fresh SwiftUI rendering
-        let settingsView = SettingsView(commandRegistry: commandRegistry, windowManager: windowManager)
+        let settingsView = SettingsView(commandRegistry: commandRegistry, windowManager: windowManager, appScanner: appScanner)
         let hostingController = NSHostingController(rootView: settingsView)
 
         let window = EscClosableWindow(contentViewController: hostingController)
