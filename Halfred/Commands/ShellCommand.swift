@@ -5,17 +5,22 @@ struct ShellCommand: CommandExecutor {
     func execute(entry: CommandEntry, argument: String?) -> Bool {
         guard let script = entry.script else { return false }
 
-        // Use osascript via Process to avoid NSAppleScript sandboxing issues
-        let appleScript = """
-        tell application "Terminal"
-            do script "\(escapeForAppleScript(script))"
-            activate
-        end tell
-        """
-
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", appleScript]
+
+        // If the script is AppleScript (starts with "tell"), run it directly.
+        // Otherwise, run it as a shell command inside Terminal.
+        if script.trimmingCharacters(in: .whitespaces).hasPrefix("tell ") {
+            process.arguments = ["-e", script]
+        } else {
+            let appleScript = """
+            tell application "Terminal"
+                do script "\(escapeForAppleScript(script))"
+                activate
+            end tell
+            """
+            process.arguments = ["-e", appleScript]
+        }
 
         let errorPipe = Pipe()
         process.standardError = errorPipe
