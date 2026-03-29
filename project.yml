@@ -22,8 +22,15 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Halfred/Halfred.entitlements
         INFOPLIST_FILE: Halfred/Info.plist
         GENERATE_INFOPLIST_FILE: false
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: false
+        ENABLE_HARDENED_RUNTIME: true
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGNING_REQUIRED: false
+        Release:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          DEVELOPMENT_TEAM: "76222M8V56"
+          CODE_SIGNING_REQUIRED: true
     postBuildScripts:
       - script: |
           # Kill running Halfred in /Applications (if any)
