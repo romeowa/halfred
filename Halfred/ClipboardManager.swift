@@ -28,7 +28,7 @@ final class ClipboardManager: ObservableObject {
 
     private var timer: Timer?
     private var lastChangeCount: Int = 0
-    private let maxItems = 50
+    private let maxItems = 200
     private var ignoredChangeCount: Int?
 
     func startMonitoring() {

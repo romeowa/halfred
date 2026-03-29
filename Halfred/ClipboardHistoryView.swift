@@ -123,14 +123,12 @@ struct ClipboardHistoryView: View {
 
     @ViewBuilder
     private func contentView(for item: ClipboardItem, isSelected: Bool) -> some View {
+        let textColor = isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.9)
+
         switch item.content {
         case .text(let string):
             VStack(alignment: .leading, spacing: 1) {
-                Text(string)
-                    .font(.system(size: 13))
-                    .foregroundColor(isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.9))
-                    .lineLimit(2)
-                    .truncationMode(.tail)
+                textPreview(string, font: .system(size: 13), color: textColor)
                 Text("\(string.count) chars")
                     .font(.system(size: 10))
                     .foregroundColor(Theme.textMuted)
@@ -149,11 +147,7 @@ struct ClipboardHistoryView: View {
                     )
 
                 if let ocrText = item.ocrText, !ocrText.isEmpty {
-                    Text(ocrText)
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.ocrText)
-                        .lineLimit(3)
-                        .truncationMode(.tail)
+                    textPreview(ocrText, font: .system(size: 11), color: Theme.ocrText)
                 } else if item.ocrInProgress {
                     Text("Recognizing text...")
                         .font(.system(size: 11, weight: .light))
@@ -168,9 +162,7 @@ struct ClipboardHistoryView: View {
 
         case .fileURL(let url):
             VStack(alignment: .leading, spacing: 1) {
-                Text(url.lastPathComponent)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.9))
+                highlightedText(url.lastPathComponent, font: .system(size: 13, weight: .medium), color: textColor)
                     .lineLimit(1)
                 Text(url.deletingLastPathComponent().path)
                     .font(.system(size: 10))
@@ -179,6 +171,92 @@ struct ClipboardHistoryView: View {
                     .truncationMode(.middle)
             }
         }
+    }
+
+    @ViewBuilder
+    private func textPreview(_ text: String, font: Font, color: Color) -> some View {
+        let lines = text.components(separatedBy: .newlines)
+
+        if query.isEmpty {
+            // No search: show first 5 lines
+            let preview = lines.prefix(5).joined(separator: "\n")
+            VStack(alignment: .leading, spacing: 0) {
+                Text(preview)
+                    .font(font)
+                    .foregroundColor(color)
+                    .lineLimit(5)
+                if lines.count > 5 {
+                    Text("... +\(lines.count - 5) lines")
+                        .font(.system(size: 10))
+                        .foregroundColor(Theme.textMuted)
+                }
+            }
+        } else {
+            // Search: find first matching line, show with ±1 context
+            let keyword = query.lowercased()
+            if let matchIdx = lines.firstIndex(where: { $0.lowercased().contains(keyword) }) {
+                let start = max(0, matchIdx - 1)
+                let end = min(lines.count - 1, matchIdx + 1)
+                let contextLines = Array(lines[start...end])
+
+                VStack(alignment: .leading, spacing: 0) {
+                    if start > 0 {
+                        Text("... \(start) lines above")
+                            .font(.system(size: 10))
+                            .foregroundColor(Theme.textMuted)
+                    }
+                    ForEach(Array(contextLines.enumerated()), id: \.offset) { i, line in
+                        highlightedText(line, font: font, color: color)
+                            .lineLimit(1)
+                    }
+                    if end < lines.count - 1 {
+                        Text("... \(lines.count - 1 - end) lines below")
+                            .font(.system(size: 10))
+                            .foregroundColor(Theme.textMuted)
+                    }
+                }
+            } else {
+                // Shouldn't happen (filtered), but fallback
+                Text(lines.prefix(5).joined(separator: "\n"))
+                    .font(font)
+                    .foregroundColor(color)
+                    .lineLimit(5)
+            }
+        }
+    }
+
+    private func highlightedText(_ text: String, font: Font, color: Color) -> Text {
+        guard !query.isEmpty else {
+            return Text(text).font(font).foregroundColor(color)
+        }
+
+        var result = Text("")
+        var searchStart = text.startIndex
+
+        while searchStart < text.endIndex,
+              let range = text.range(of: query, options: .caseInsensitive, range: searchStart..<text.endIndex) {
+            // Text before match
+            if searchStart < range.lowerBound {
+                result = result + Text(String(text[searchStart..<range.lowerBound]))
+                    .font(font).foregroundColor(color)
+            }
+
+            // Matched text
+            result = result + Text(String(text[range]))
+                .font(font)
+                .foregroundColor(Theme.accent)
+                .bold()
+
+            searchStart = range.upperBound
+        }
+
+        // Remaining text after last match
+        if searchStart < text.endIndex {
+            result = result + Text(String(text[searchStart...]))
+                .font(font).foregroundColor(color)
+        }
+
+        return result
     }
 
     private func iconName(for item: ClipboardItem) -> String {

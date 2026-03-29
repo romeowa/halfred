@@ -83,12 +83,11 @@ struct SearchView: View {
             // Content
             switch mode {
             case .clipboard:
-                if !clipboardManager.filteredItems(query: query).isEmpty || query.isEmpty {
-                    Rectangle()
-                        .fill(Theme.border)
-                        .frame(height: 1)
+                Rectangle()
+                    .fill(Theme.border)
+                    .frame(height: 1)
 
-                    ClipboardHistoryView(
+                ClipboardHistoryView(
                         clipboardManager: clipboardManager,
                         query: query,
                         selectedIndex: selectedIndex,
@@ -103,7 +102,6 @@ struct SearchView: View {
                             clipboardManager.removeItem(item)
                         }
                     )
-                }
 
             case .commands:
                 if !matchingCommands.isEmpty || !matchingApps.isEmpty {
