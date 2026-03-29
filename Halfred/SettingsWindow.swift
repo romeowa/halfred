@@ -10,25 +10,39 @@ final class SettingsWindow {
     }
 
     func show() {
-        if let window = window {
+        if let window = window, window.isVisible {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
 
+        // Recreate window to ensure fresh SwiftUI rendering
         let settingsView = SettingsView(commandRegistry: commandRegistry)
         let hostingController = NSHostingController(rootView: settingsView)
 
-        let window = NSWindow(contentViewController: hostingController)
+        let window = EscClosableWindow(contentViewController: hostingController)
         window.title = "Halfred Settings"
         window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
-        window.setContentSize(NSSize(width: 600, height: 450))
-        window.minSize = NSSize(width: 500, height: 350)
+        window.setContentSize(NSSize(width: 600, height: 480))
+        window.minSize = NSSize(width: 560, height: 420)
         window.center()
+        window.backgroundColor = .halfredBackground
+        window.titlebarAppearsTransparent = true
+        window.appearance = NSAppearance(named: .darkAqua)
         window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
         self.window = window
+    }
+}
+
+final class EscClosableWindow: NSWindow {
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 { // ESC
+            close()
+        } else {
+            super.keyDown(with: event)
+        }
     }
 }

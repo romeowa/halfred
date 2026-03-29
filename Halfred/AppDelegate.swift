@@ -42,8 +42,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupHotkey() {
-        hotkeyManager.register(keyCode: 49, modifiers: UInt32(optionKey)) { [weak self] in
+        hotkeyManager.register(id: 1, keyCode: 49, modifiers: UInt32(optionKey)) { [weak self] in
             self?.toggleSearchPanel()
+        }
+        // ⌘, for Settings
+        hotkeyManager.register(id: 2, keyCode: 43, modifiers: UInt32(cmdKey)) { [weak self] in
+            self?.searchPanel.hide()
+            self?.openSettings()
         }
     }
 

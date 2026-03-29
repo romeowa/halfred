@@ -18,14 +18,12 @@ final class CommandRegistry: ObservableObject {
     func loadCommands() {
         commands = []
 
-        // Load from bundled commands.json
-        if let bundledURL = Bundle.main.url(forResource: "commands", withExtension: "json") {
-            loadFromFile(url: bundledURL)
-        }
-
-        // Load from user config (~/.halfred/commands.json), overrides bundled
         if FileManager.default.fileExists(atPath: userConfigURL.path) {
+            // User config exists — use it as the single source of truth
             loadFromFile(url: userConfigURL)
+        } else if let bundledURL = Bundle.main.url(forResource: "commands", withExtension: "json") {
+            // First launch — use bundled defaults
+            loadFromFile(url: bundledURL)
         }
 
         NSLog("Halfred: Loaded \(commands.count) commands")
@@ -60,6 +58,11 @@ final class CommandRegistry: ObservableObject {
 
     func deleteCommand(keyword: String) {
         commands.removeAll { $0.keyword == keyword }
+        saveUserCommands()
+    }
+
+    func moveCommand(from source: IndexSet, to destination: Int) {
+        commands.move(fromOffsets: source, toOffset: destination)
         saveUserCommands()
     }
 

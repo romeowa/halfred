@@ -14,11 +14,18 @@ struct SearchTextField: NSViewRepresentable {
         textField.delegate = context.coordinator
         textField.onTab = onTab
         textField.onEscape = onEscape
-        textField.font = .systemFont(ofSize: 22)
+        textField.font = .systemFont(ofSize: 20, weight: .light)
+        textField.textColor = .white
         textField.isBordered = false
         textField.backgroundColor = .clear
         textField.focusRingType = .none
-        textField.placeholderString = "Type a command..."
+        textField.placeholderAttributedString = NSAttributedString(
+            string: "Type a command...",
+            attributes: [
+                .foregroundColor: NSColor(white: 0.40, alpha: 1.0),
+                .font: NSFont.systemFont(ofSize: 20, weight: .light),
+            ]
+        )
         textField.cell?.lineBreakMode = .byTruncatingTail
         return textField
     }

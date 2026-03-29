@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2E71B7A131B99629A02C1FC1 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD47D84DA4DE17394FE45A9 /* Theme.swift */; };
 		3BAEC23AA55483328922419C /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF77682517BA54C65F0DE7F /* Command.swift */; };
 		3EA2AB887870CD86C7C488CA /* commands.json in Resources */ = {isa = PBXBuildFile; fileRef = 37D497E8505F18444B13A812 /* commands.json */; };
 		428126C1DF72F2293774C539 /* CommandParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F09DEC3239984BE55A52475 /* CommandParser.swift */; };
 		47224464ADFE66A3183AB982 /* HalfredApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8861D53A6F1FADDB3ED3970C /* HalfredApp.swift */; };
 		5021C2A75C6EAF1613CE79BC /* AppLaunchCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771D930251C64E7EDD403C6E /* AppLaunchCommand.swift */; };
+		520305EF69B3FD9E62AA0D2C /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54EF211479605B8A7E385BEA /* LaunchAtLogin.swift */; };
 		59BA226530F020FDBDC906BF /* CommandRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BDAA27AF41494F24C1E184 /* CommandRegistry.swift */; };
 		63202B2DE369AF8D13A9CB54 /* ShellCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C61D89CD4573608F53593762 /* ShellCommand.swift */; };
 		78A20268AF5720CD3578C2A4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0556F3AABD5641CC9B24641 /* AppDelegate.swift */; };
@@ -27,6 +29,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0DD47D84DA4DE17394FE45A9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		142E25647ADFB49B93235ABD /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		1F09DEC3239984BE55A52475 /* CommandParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandParser.swift; sourceTree = "<group>"; };
 		22BDAA27AF41494F24C1E184 /* CommandRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRegistry.swift; sourceTree = "<group>"; };
@@ -36,6 +39,7 @@
 		3C75B759FF77649A742F803E /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		45BE075E6BB478784FD4648A /* WebSearchCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchCommand.swift; sourceTree = "<group>"; };
 		4BF77682517BA54C65F0DE7F /* Command.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
+		54EF211479605B8A7E385BEA /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		771D930251C64E7EDD403C6E /* AppLaunchCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchCommand.swift; sourceTree = "<group>"; };
 		80E0D8A2D38FA6431CC4818B /* OpenCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCommand.swift; sourceTree = "<group>"; };
 		813A3DA681D191AC8142D698 /* SearchTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextField.swift; sourceTree = "<group>"; };
@@ -62,11 +66,13 @@
 				8861D53A6F1FADDB3ED3970C /* HalfredApp.swift */,
 				BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */,
 				F9D3D47810B1F7B77B3EBDD7 /* Info.plist */,
+				54EF211479605B8A7E385BEA /* LaunchAtLogin.swift */,
 				142E25647ADFB49B93235ABD /* SearchPanel.swift */,
 				813A3DA681D191AC8142D698 /* SearchTextField.swift */,
 				3C75B759FF77649A742F803E /* SearchView.swift */,
 				DB2008BC2115FFE94639A200 /* SettingsView.swift */,
 				91462F9802605B991A9E1402 /* SettingsWindow.swift */,
+				0DD47D84DA4DE17394FE45A9 /* Theme.swift */,
 				8BCE96018B1CF20F89719DEA /* Commands */,
 			);
 			path = Halfred;
@@ -175,6 +181,7 @@
 				59BA226530F020FDBDC906BF /* CommandRegistry.swift in Sources */,
 				47224464ADFE66A3183AB982 /* HalfredApp.swift in Sources */,
 				9F770BEC14C0D9403E991940 /* HotkeyManager.swift in Sources */,
+				520305EF69B3FD9E62AA0D2C /* LaunchAtLogin.swift in Sources */,
 				C253D944B721F5141D289551 /* OpenCommand.swift in Sources */,
 				E555B42BE478D4FAB3178FFD /* SearchPanel.swift in Sources */,
 				A061FE78F76951AE79A23855 /* SearchTextField.swift in Sources */,
@@ -182,6 +189,7 @@
 				D1DB782C1F25C83263BEE38E /* SettingsView.swift in Sources */,
 				D0A8AA6263C10D85CF3FA76C /* SettingsWindow.swift in Sources */,
 				63202B2DE369AF8D13A9CB54 /* ShellCommand.swift in Sources */,
+				2E71B7A131B99629A02C1FC1 /* Theme.swift in Sources */,
 				F5FB0D0DB9ABAF3A55846478 /* WebSearchCommand.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

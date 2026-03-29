@@ -2,26 +2,39 @@ import Carbon
 import AppKit
 
 final class HotkeyManager {
-    private var hotKeyRef: EventHotKeyRef?
-    private static var handler: (() -> Void)?
+    private var hotKeyRefs: [UInt32: EventHotKeyRef] = [:]
+    private static var handlers: [UInt32: () -> Void] = [:]
+    private static var installed = false
 
-    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
-        HotkeyManager.handler = handler
+    func register(id: UInt32, keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
+        HotkeyManager.handlers[id] = handler
 
-        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        if !HotkeyManager.installed {
+            var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
 
-        InstallEventHandler(GetApplicationEventTarget(), { _, event, _ -> OSStatus in
-            HotkeyManager.handler?()
-            return noErr
-        }, 1, &eventType, nil, nil)
+            InstallEventHandler(GetApplicationEventTarget(), { _, event, _ -> OSStatus in
+                var hotkeyID = EventHotKeyID()
+                GetEventParameter(event, EventParamName(kEventParamDirectObject),
+                                  EventParamType(typeEventHotKeyID), nil,
+                                  MemoryLayout<EventHotKeyID>.size, nil, &hotkeyID)
+                HotkeyManager.handlers[hotkeyID.id]?()
+                return noErr
+            }, 1, &eventType, nil, nil)
 
-        let hotkeyID = EventHotKeyID(signature: OSType(0x484C4652), id: 1) // "HLFR"
-        RegisterEventHotKey(keyCode, modifiers, hotkeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+            HotkeyManager.installed = true
+        }
+
+        let hotkeyID = EventHotKeyID(signature: OSType(0x484C4652), id: id)
+        var ref: EventHotKeyRef?
+        RegisterEventHotKey(keyCode, modifiers, hotkeyID, GetApplicationEventTarget(), 0, &ref)
+        if let ref = ref {
+            hotKeyRefs[id] = ref
+        }
     }
 
     deinit {
-        if let hotKeyRef = hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
+        for ref in hotKeyRefs.values {
+            UnregisterEventHotKey(ref)
         }
     }
 }

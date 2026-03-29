@@ -16,10 +16,10 @@ final class SearchPanel {
         }
 
         let hostingView = NSHostingView(rootView: searchView)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 680, height: 54)
+        hostingView.sizingOptions = [.intrinsicContentSize]
 
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 680, height: 54),
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 60),
             styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -36,10 +36,17 @@ final class SearchPanel {
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
 
-        // ESC key closes the panel
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            self?.hide()
+        }
     }
 
     func toggle() {
