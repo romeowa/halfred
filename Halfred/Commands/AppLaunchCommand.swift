@@ -29,9 +29,22 @@ struct AppLaunchCommand: CommandExecutor {
             return false
         }
 
-        NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
-            if let error = error {
-                NSLog("Halfred: Failed to launch \(appName): \(error)")
+        // For path-based apps, use /usr/bin/open which reliably handles
+        // all bundle types including iOS/iPad wrapped bundles.
+        if appName.contains("/") {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", url.path]
+            do {
+                try process.run()
+            } catch {
+                NSLog("Halfred: Failed to open \(appName): \(error)")
+            }
+        } else {
+            NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
+                if let error = error {
+                    NSLog("Halfred: Failed to launch \(appName): \(error)")
+                }
             }
         }
         return true

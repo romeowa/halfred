@@ -117,7 +117,7 @@ struct SearchView: View {
                                     if hovering { selectedIndex = index }
                                 }
                                 .onTapGesture {
-                                    query = command.keyword + " "
+                                    query = matchingKeyword(for: command) + " "
                                     selectedIndex = -1
                                 }
                         }
@@ -302,7 +302,7 @@ struct SearchView: View {
     private func autocomplete() {
         let cmdCount = matchingCommands.prefix(10).count
         if selectedIndex >= 0, selectedIndex < cmdCount {
-            query = matchingCommands[selectedIndex].keyword + " "
+            query = matchingKeyword(for: matchingCommands[selectedIndex]) + " "
             matchingCommands = []
             matchingApps = []
             selectedIndex = -1
@@ -311,7 +311,7 @@ struct SearchView: View {
             appScanner.launch(app)
             onDismiss()
         } else if let first = matchingCommands.first {
-            query = first.keyword + " "
+            query = matchingKeyword(for: first) + " "
             matchingCommands = []
             matchingApps = []
             selectedIndex = -1
@@ -319,6 +319,12 @@ struct SearchView: View {
             appScanner.launch(firstApp)
             onDismiss()
         }
+    }
+
+    /// Returns the keyword from the entry that best matches the current query input.
+    private func matchingKeyword(for entry: CommandEntry) -> String {
+        let input = CommandParser.parseKeyword(from: query).lowercased()
+        return entry.keywords.first { $0.lowercased().hasPrefix(input) } ?? entry.primaryKeyword
     }
 
     private func executeCommand() {
@@ -334,7 +340,21 @@ struct SearchView: View {
         if selectedIndex >= 0, selectedIndex < cmdCount {
             let selected = matchingCommands[selectedIndex]
             let argument = CommandParser.parseArgument(from: query)
-            if commandRegistry.execute(keyword: selected.keyword, argument: argument) {
+            if commandRegistry.execute(keyword: selected.primaryKeyword, argument: argument) {
+                onDismiss()
+            }
+            return
+        }
+
+        // If only one result total, execute it directly
+        if totalCount == 1 {
+            if let onlyCommand = matchingCommands.first {
+                let argument = CommandParser.parseArgument(from: query)
+                if commandRegistry.execute(keyword: onlyCommand.primaryKeyword, argument: argument) {
+                    onDismiss()
+                }
+            } else if let onlyApp = matchingApps.first {
+                appScanner.launch(onlyApp)
                 onDismiss()
             }
             return
@@ -368,7 +388,7 @@ struct SearchView: View {
             }
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(command.keyword)
+                Text(matchingKeyword(for: command))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.9))
                 Text(command.name)

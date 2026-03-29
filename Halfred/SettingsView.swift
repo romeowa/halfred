@@ -603,7 +603,7 @@ struct CommandEditView: View {
                         }
                     }
 
-                    DarkTextField(label: "KEYWORD", text: $command.keyword, placeholder: "e.g. google")
+                    DarkTextField(label: "KEYWORD", text: $command.keyword, placeholder: "e.g. g, google, gg")
                     DarkTextField(label: "NAME", text: $command.name, placeholder: "e.g. Google Search")
 
                     switch command.type {

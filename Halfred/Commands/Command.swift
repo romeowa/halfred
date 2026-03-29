@@ -9,6 +9,16 @@ struct CommandEntry: Codable, Identifiable {
     var appName: String?
     var script: String?
     var path: String?
+
+    /// Individual keywords parsed from the comma-separated `keyword` field.
+    var keywords: [String] {
+        keyword.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+
+    /// The first keyword, used as the primary display name.
+    var primaryKeyword: String {
+        keywords.first ?? keyword
+    }
 }
 
 struct CommandsFile: Codable {

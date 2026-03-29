@@ -94,12 +94,15 @@ final class CommandRegistry: ObservableObject {
 
     func search(prefix: String) -> [CommandEntry] {
         let lower = prefix.lowercased()
-        return commands.filter { $0.keyword.lowercased().hasPrefix(lower) }
+        return commands.filter { entry in
+            entry.keywords.contains { $0.lowercased().hasPrefix(lower) }
+        }
     }
 
     @discardableResult
     func execute(keyword: String, argument: String?) -> Bool {
-        guard let entry = commands.first(where: { $0.keyword.lowercased() == keyword.lowercased() }),
+        let lower = keyword.lowercased()
+        guard let entry = commands.first(where: { $0.keywords.contains { $0.lowercased() == lower } }),
               let executor = executors[entry.type] else {
             return false
         }
