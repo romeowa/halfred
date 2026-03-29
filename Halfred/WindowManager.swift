@@ -28,7 +28,7 @@ final class WindowManager {
 
     func snapFull() {
         guard isEnabled else { return }
-        guard let screen = NSScreen.main else { return }
+        guard let screen = screenForFrontmostWindow() else { return }
         let frame = screen.visibleFrame
 
         lastSnapSide = nil
@@ -44,7 +44,7 @@ final class WindowManager {
 
     /// Returns snap widths: [minimum window width, 1/2 screen, 2/3 screen]
     private func snapWidths() -> [CGFloat] {
-        guard let screen = NSScreen.main else { return [] }
+        guard let screen = screenForFrontmostWindow() else { return [] }
         let screenWidth = screen.visibleFrame.width
         let half = screenWidth * 0.5
         let twoThirds = screenWidth * (2.0 / 3.0)
@@ -62,7 +62,7 @@ final class WindowManager {
 
     private func nextWidth(for side: SnapSide) -> CGFloat {
         let widths = snapWidths()
-        guard !widths.isEmpty else { return NSScreen.main?.visibleFrame.width ?? 800 }
+        guard !widths.isEmpty else { return screenForFrontmostWindow()?.visibleFrame.width ?? 800 }
         if lastSnapSide == side {
             lastSnapIndex = (lastSnapIndex + 1) % widths.count
         } else {
@@ -92,7 +92,7 @@ final class WindowManager {
     }
 
     private func snap(side: SnapSide, width: CGFloat) {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = screenForFrontmostWindow() else { return }
         let frame = screen.visibleFrame
 
         let x: CGFloat
@@ -126,6 +126,45 @@ final class WindowManager {
         AXIsProcessTrusted()
     }
 
+    /// Returns the screen where the frontmost window is located, falling back to NSScreen.main.
+    private func screenForFrontmostWindow() -> NSScreen? {
+        guard AXIsProcessTrusted(),
+              let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier != Bundle.main.bundleIdentifier else {
+            return NSScreen.main
+        }
+
+        let appRef = AXUIElementCreateApplication(app.processIdentifier)
+        var windowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute as CFString, &windowValue) == .success,
+              let window = windowValue else {
+            return NSScreen.main
+        }
+
+        var posValue: CFTypeRef?
+        var sizeValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window as! AXUIElement, kAXPositionAttribute as CFString, &posValue) == .success,
+              AXUIElementCopyAttributeValue(window as! AXUIElement, kAXSizeAttribute as CFString, &sizeValue) == .success else {
+            return NSScreen.main
+        }
+
+        var pos = CGPoint.zero
+        var size = CGSize.zero
+        AXValueGetValue(posValue as! AXValue, .cgPoint, &pos)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+
+        // AX coordinates are top-left origin; find which screen contains the window center
+        let centerX = pos.x + size.width / 2
+        let centerY = pos.y + size.height / 2
+
+        // Convert AX top-left Y to AppKit bottom-left Y using the primary screen height
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let appKitCenterY = primaryHeight - centerY
+
+        let windowCenter = CGPoint(x: centerX, y: appKitCenterY)
+        return NSScreen.screens.first(where: { $0.frame.contains(windowCenter) }) ?? NSScreen.main
+    }
+
     private func setFrontmostWindowFrame(_ frame: CGRect) {
         guard AXIsProcessTrusted() else {
             NSLog("Halfred: Accessibility permission not granted")
@@ -152,10 +191,11 @@ final class WindowManager {
             return
         }
 
-        // Convert from AppKit coordinates (origin bottom-left) to screen coordinates (origin top-left)
-        guard let screen = NSScreen.main else { return }
-        let screenHeight = screen.frame.height
-        let flippedY = screenHeight - frame.origin.y - frame.height
+        // Convert from AppKit coordinates (origin: primary screen bottom-left)
+        // to AX coordinates (origin: primary screen top-left)
+        // The flip must always use the primary screen height, regardless of which monitor the window is on
+        let primaryScreenHeight = NSScreen.screens.first?.frame.height ?? 0
+        let flippedY = primaryScreenHeight - frame.origin.y - frame.height
 
         var position = CGPoint(x: frame.origin.x, y: flippedY)
         var size = CGSize(width: frame.width, height: frame.height)
