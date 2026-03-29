@@ -39,5 +39,6 @@ targets:
           # Copy built app to /Applications
           rm -rf /Applications/Halfred.app
           cp -R "${BUILT_PRODUCTS_DIR}/Halfred.app" /Applications/Halfred.app
+          xattr -dr com.apple.quarantine /Applications/Halfred.app 2>/dev/null || true
           echo "Halfred installed to /Applications/Halfred.app"
         name: "Install to /Applications"
