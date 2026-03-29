@@ -6,15 +6,8 @@ final class WindowManager {
         case left, right
     }
 
-    enum SnapRatio: CGFloat, CaseIterable {
-        case half = 0.5
-        case oneThird = 0.333333
-        case twoThirds = 0.666667
-    }
-
     private var lastSnapSide: SnapSide?
-    private var lastSnapRatioIndex: Int = 0
-    private let ratios: [SnapRatio] = [.half, .oneThird, .twoThirds]
+    private var lastSnapIndex: Int = 0
 
     var isEnabled: Bool {
         get { UserDefaults.standard.object(forKey: "windowSnappingEnabled") as? Bool ?? true }
@@ -23,16 +16,14 @@ final class WindowManager {
 
     func snapLeft() {
         guard isEnabled else { return }
-        let availableRatios = supportedRatios()
-        let ratio = nextRatio(for: .left, from: availableRatios)
-        snap(side: .left, ratio: ratio)
+        let width = nextWidth(for: .left)
+        snap(side: .left, width: width)
     }
 
     func snapRight() {
         guard isEnabled else { return }
-        let availableRatios = supportedRatios()
-        let ratio = nextRatio(for: .right, from: availableRatios)
-        snap(side: .right, ratio: ratio)
+        let width = nextWidth(for: .right)
+        snap(side: .right, width: width)
     }
 
     func snapFull() {
@@ -41,7 +32,7 @@ final class WindowManager {
         let frame = screen.visibleFrame
 
         lastSnapSide = nil
-        lastSnapRatioIndex = 0
+        lastSnapIndex = 0
 
         setFrontmostWindowFrame(CGRect(
             x: frame.origin.x,
@@ -51,27 +42,34 @@ final class WindowManager {
         ))
     }
 
-    private func nextRatio(for side: SnapSide, from available: [SnapRatio]) -> SnapRatio {
-        guard !available.isEmpty else { return .half }
-        if lastSnapSide == side {
-            lastSnapRatioIndex = (lastSnapRatioIndex + 1) % available.count
+    /// Returns snap widths: [minimum window width, 1/2 screen, 2/3 screen]
+    private func snapWidths() -> [CGFloat] {
+        guard let screen = NSScreen.main else { return [] }
+        let screenWidth = screen.visibleFrame.width
+        let half = screenWidth * 0.5
+        let twoThirds = screenWidth * (2.0 / 3.0)
+
+        var widths: [CGFloat] = []
+        if let minW = getMinWindowWidth(), minW > 0, minW < half - 1 {
+            widths.append(minW)
         } else {
-            lastSnapSide = side
-            lastSnapRatioIndex = 0
+            widths.append(screenWidth / 5.0)
         }
-        return available[lastSnapRatioIndex]
+        widths.append(half)
+        widths.append(twoThirds)
+        return widths
     }
 
-    private func supportedRatios() -> [SnapRatio] {
-        guard let screen = NSScreen.main else { return ratios }
-        let screenWidth = screen.visibleFrame.width
-        let minWidth = getMinWindowWidth()
-
-        guard let minWidth = minWidth, minWidth > 0 else { return ratios }
-
-        return ratios.filter { ratio in
-            screenWidth * ratio.rawValue >= minWidth
+    private func nextWidth(for side: SnapSide) -> CGFloat {
+        let widths = snapWidths()
+        guard !widths.isEmpty else { return NSScreen.main?.visibleFrame.width ?? 800 }
+        if lastSnapSide == side {
+            lastSnapIndex = (lastSnapIndex + 1) % widths.count
+        } else {
+            lastSnapSide = side
+            lastSnapIndex = 0
         }
+        return widths[lastSnapIndex]
     }
 
     private func getMinWindowWidth() -> CGFloat? {
@@ -93,10 +91,9 @@ final class WindowManager {
         return minSize.width > 0 ? minSize.width : nil
     }
 
-    private func snap(side: SnapSide, ratio: SnapRatio) {
+    private func snap(side: SnapSide, width: CGFloat) {
         guard let screen = NSScreen.main else { return }
         let frame = screen.visibleFrame
-        let width = frame.width * ratio.rawValue
 
         let x: CGFloat
         switch side {

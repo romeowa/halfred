@@ -252,13 +252,13 @@ struct WindowTab: View {
                     VStack(spacing: 1) {
                         SnapShortcutRow(
                             title: "Snap Left",
-                            description: "Cycle: 1/2 → 1/3 → 2/3",
+                            description: "Cycle: Min → 1/2 → 2/3",
                             keys: ["⌥", "⌘", "←"],
                             isFirst: true
                         )
                         SnapShortcutRow(
                             title: "Snap Right",
-                            description: "Cycle: 1/2 → 1/3 → 2/3",
+                            description: "Cycle: Min → 1/2 → 2/3",
                             keys: ["⌥", "⌘", "→"],
                             isFirst: false
                         )
@@ -279,8 +279,8 @@ struct WindowTab: View {
                             .foregroundColor(Theme.textSecondary)
 
                         HStack(spacing: 16) {
+                            SnapPreview(label: "Min", fraction: 0.25)
                             SnapPreview(label: "1/2", fraction: 0.5)
-                            SnapPreview(label: "1/3", fraction: 0.333)
                             SnapPreview(label: "2/3", fraction: 0.667)
                         }
                     }
