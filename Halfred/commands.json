@@ -27,7 +27,7 @@
     {
       "type": "app",
       "keyword": "xcode",
-      "name": "Xcode",
+      "name": "Xcode", 
       "appName": "Xcode"
     },
     {
@@ -50,3 +50,5 @@
     }
   ]
 }
+
+

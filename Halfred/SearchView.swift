@@ -1,35 +1,56 @@
 import SwiftUI
 
+enum SearchMode {
+    case clipboard
+    case commands
+}
+
 struct SearchView: View {
     let commandRegistry: CommandRegistry
     let appScanner: AppScanner
+    let clipboardManager: ClipboardManager
     let onDismiss: () -> Void
 
     @State private var query: String = ""
+    @State private var mode: SearchMode = .commands
     @State private var matchingCommands: [CommandEntry] = []
     @State private var matchingApps: [ScannedApp] = []
     @State private var selectedIndex: Int = -1
+    @State private var copiedHint: Bool = false
 
-    private var totalCount: Int { matchingCommands.prefix(10).count + matchingApps.prefix(5).count }
+    private var totalCount: Int {
+        switch mode {
+        case .commands:
+            return matchingCommands.prefix(10).count + matchingApps.prefix(5).count
+        case .clipboard:
+            return clipboardManager.filteredItems(query: query).count
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
             HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: mode == .clipboard ? "clipboard" : "magnifyingglass")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(Theme.accent)
 
                 SearchTextField(
                     text: $query,
-                    onSubmit: { executeCommand() },
-                    onTab: { autocomplete() },
+                    placeholder: mode == .clipboard ? "Search clipboard..." : "Type a command...",
+                    onSubmit: { executeAction() },
+                    onTab: { handleTab() },
                     onEscape: { onDismiss() },
                     onArrowUp: { moveSelection(-1) },
-                    onArrowDown: { moveSelection(1) }
+                    onArrowDown: { moveSelection(1) },
+                    onCmd1: { switchMode(.commands) },
+                    onCmd2: { switchMode(.clipboard) }
                 )
                 .onChange(of: query) { _, newValue in
-                    updateMatches(for: newValue)
+                    if mode == .commands {
+                        updateMatches(for: newValue)
+                    }
+                    selectedIndex = -1
                 }
 
                 if !query.isEmpty {
@@ -39,68 +60,101 @@ struct SearchView: View {
                     }
                     .buttonStyle(.plain)
                     .onHover { hovering in
-                        if hovering {
-                            NSCursor.pointingHand.push()
-                        } else {
-                            NSCursor.pop()
-                        }
+                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
                     }
                 }
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
 
-            // Results list
-            if !matchingCommands.isEmpty || !matchingApps.isEmpty {
-                Rectangle()
-                    .fill(Theme.border)
-                    .frame(height: 1)
+            // Mode toggle (⌘1 Commands, ⌘2 Clipboard)
+            HStack(spacing: 0) {
+                modeButton(title: "Commands", icon: "command", shortcut: "⌘1", isSelected: mode == .commands) {
+                    switchMode(.commands)
+                }
+                modeButton(title: "Clipboard", icon: "clipboard", shortcut: "⌘2", isSelected: mode == .clipboard) {
+                    switchMode(.clipboard)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 18)
+            .padding(.bottom, 8)
 
-                VStack(spacing: 2) {
-                    // Registered commands
-                    ForEach(Array(matchingCommands.prefix(10).enumerated()), id: \.element.keyword) { index, command in
-                        let isSelected = index == selectedIndex
-                        commandRow(command: command, isSelected: isSelected)
-                            .onHover { hovering in
-                                if hovering { selectedIndex = index }
-                            }
-                            .onTapGesture {
-                                query = command.keyword + " "
-                                selectedIndex = -1
-                            }
-                    }
+            // Content
+            switch mode {
+            case .clipboard:
+                if !clipboardManager.filteredItems(query: query).isEmpty || query.isEmpty {
+                    Rectangle()
+                        .fill(Theme.border)
+                        .frame(height: 1)
 
-                    // Scanned apps
-                    if !matchingApps.isEmpty {
-                        if !matchingCommands.isEmpty {
-                            HStack {
-                                Text("APPS")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(Theme.textMuted)
-                                Rectangle()
-                                    .fill(Theme.border)
-                                    .frame(height: 1)
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.top, 4)
+                    ClipboardHistoryView(
+                        clipboardManager: clipboardManager,
+                        query: query,
+                        selectedIndex: selectedIndex,
+                        onPaste: { item in
+                            clipboardManager.copyToClipboard(item)
+                            showCopiedHint()
+                        },
+                        onCopyText: { _ in
+                            showCopiedHint()
+                        },
+                        onRemove: { item in
+                            clipboardManager.removeItem(item)
                         }
+                    )
+                }
 
-                        ForEach(Array(matchingApps.prefix(5).enumerated()), id: \.element.name) { appIndex, app in
-                            let globalIndex = matchingCommands.prefix(10).count + appIndex
-                            let isSelected = globalIndex == selectedIndex
-                            appRow(app: app, isSelected: isSelected)
+            case .commands:
+                if !matchingCommands.isEmpty || !matchingApps.isEmpty {
+                    Rectangle()
+                        .fill(Theme.border)
+                        .frame(height: 1)
+
+                    VStack(spacing: 2) {
+                        ForEach(Array(matchingCommands.prefix(10).enumerated()), id: \.element.keyword) { index, command in
+                            let isSelected = index == selectedIndex
+                            commandRow(command: command, isSelected: isSelected)
                                 .onHover { hovering in
-                                    if hovering { selectedIndex = globalIndex }
+                                    if hovering { selectedIndex = index }
                                 }
                                 .onTapGesture {
-                                    appScanner.launch(app)
-                                    onDismiss()
+                                    query = command.keyword + " "
+                                    selectedIndex = -1
                                 }
                         }
+
+                        if !matchingApps.isEmpty {
+                            if !matchingCommands.isEmpty {
+                                HStack {
+                                    Text("APPS")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(Theme.textMuted)
+                                    Rectangle()
+                                        .fill(Theme.border)
+                                        .frame(height: 1)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.top, 4)
+                            }
+
+                            ForEach(Array(matchingApps.prefix(5).enumerated()), id: \.element.name) { appIndex, app in
+                                let globalIndex = matchingCommands.prefix(10).count + appIndex
+                                let isSelected = globalIndex == selectedIndex
+                                appRow(app: app, isSelected: isSelected)
+                                    .onHover { hovering in
+                                        if hovering { selectedIndex = globalIndex }
+                                    }
+                                    .onTapGesture {
+                                        appScanner.launch(app)
+                                        onDismiss()
+                                    }
+                            }
+                        }
                     }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 6)
             }
         }
         .background(Theme.background)
@@ -111,11 +165,107 @@ struct SearchView: View {
         )
         .shadow(color: Theme.accent.opacity(0.08), radius: 20, y: 8)
         .shadow(color: .black.opacity(0.5), radius: 30, y: 10)
+        .overlay(
+            Group {
+                if copiedHint {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 14))
+                        Text("Copied!")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .fill(Theme.typeApp)
+                    )
+                    .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: copiedHint)
+        )
         .onReceive(NotificationCenter.default.publisher(for: .halfredSearchPanelShown)) { _ in
             query = ""
+            mode = .commands
+            copiedHint = false
             matchingCommands = commandRegistry.allCommands()
             matchingApps = []
             selectedIndex = -1
+        }
+    }
+
+    // MARK: - Mode Button
+
+    @ViewBuilder
+    private func modeButton(title: String, icon: String, shortcut: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                Text(shortcut)
+                    .font(.system(size: 10))
+                    .foregroundColor(isSelected ? Theme.accent.opacity(0.6) : Theme.textMuted.opacity(0.6))
+            }
+            .foregroundColor(isSelected ? Theme.accent : Theme.textMuted)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? Theme.accent.opacity(0.12) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+    }
+
+    private func switchMode(_ newMode: SearchMode) {
+        mode = newMode
+        selectedIndex = -1
+        if newMode == .commands {
+            updateMatches(for: query)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func handleTab() {
+        if mode == .commands {
+            autocomplete()
+        }
+    }
+
+    private func executeAction() {
+        switch mode {
+        case .clipboard:
+            let items = clipboardManager.filteredItems(query: query)
+            let index = selectedIndex >= 0 ? selectedIndex : 0
+            guard index < items.count else { return }
+            clipboardManager.copyToClipboard(items[index])
+            showCopiedHint()
+
+        case .commands:
+            executeCommand()
+        }
+    }
+
+    private func showCopiedHint() {
+        copiedHint = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            copiedHint = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                onDismiss()
+            }
         }
     }
 
@@ -126,7 +276,6 @@ struct SearchView: View {
             matchingApps = []
         } else if CommandParser.parseArgument(from: input) == nil {
             matchingCommands = commandRegistry.search(prefix: keyword)
-            // Search installed apps, exclude ones already registered as commands
             let registeredAppNames = Set(
                 matchingCommands.filter { $0.type == "app" }.compactMap { $0.appName?.lowercased() }
             )
@@ -177,7 +326,6 @@ struct SearchView: View {
     private func executeCommand() {
         let cmdCount = matchingCommands.prefix(10).count
 
-        // If an app result is selected, launch it
         if selectedIndex >= cmdCount, selectedIndex < totalCount {
             let app = matchingApps[selectedIndex - cmdCount]
             appScanner.launch(app)
@@ -185,7 +333,6 @@ struct SearchView: View {
             return
         }
 
-        // If a command result is selected, execute it
         if selectedIndex >= 0, selectedIndex < cmdCount {
             let selected = matchingCommands[selectedIndex]
             let argument = CommandParser.parseArgument(from: query)
@@ -195,7 +342,6 @@ struct SearchView: View {
             return
         }
 
-        // Try executing as command keyword
         let keyword = CommandParser.parseKeyword(from: query)
         let argument = CommandParser.parseArgument(from: query)
         if commandRegistry.execute(keyword: keyword, argument: argument) {
@@ -203,12 +349,13 @@ struct SearchView: View {
             return
         }
 
-        // Fallback: try launching first matching app
         if let firstApp = matchingApps.first {
             appScanner.launch(firstApp)
             onDismiss()
         }
     }
+
+    // MARK: - Row Views
 
     @ViewBuilder
     private func commandRow(command: CommandEntry, isSelected: Bool) -> some View {

@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let commandRegistry = CommandRegistry()
     private let windowManager = WindowManager()
     private let appScanner = AppScanner()
+    private let clipboardManager = ClipboardManager()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupCommandRegistry()
@@ -17,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupSearchPanel()
         setupSettingsWindow()
         setupHotkey()
+        clipboardManager.startMonitoring()
         WindowManager.promptAccessibilityOnFirstLaunch()
     }
 
@@ -41,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupSearchPanel() {
-        searchPanel = SearchPanel(commandRegistry: commandRegistry, appScanner: appScanner)
+        searchPanel = SearchPanel(commandRegistry: commandRegistry, appScanner: appScanner, clipboardManager: clipboardManager)
     }
 
     private func setupHotkey() {

@@ -10,6 +10,7 @@
 		251A55690A2E2E97A1C8E30F /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2A2CFEDA75A5DF5EC1351A /* WindowManager.swift */; };
 		2E71B7A131B99629A02C1FC1 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD47D84DA4DE17394FE45A9 /* Theme.swift */; };
 		3BAEC23AA55483328922419C /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF77682517BA54C65F0DE7F /* Command.swift */; };
+		3D574F46DE2E05C2846B609C /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60410DDD4C24638AB0D2524 /* ClipboardManager.swift */; };
 		3EA2AB887870CD86C7C488CA /* commands.json in Resources */ = {isa = PBXBuildFile; fileRef = 37D497E8505F18444B13A812 /* commands.json */; };
 		428126C1DF72F2293774C539 /* CommandParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F09DEC3239984BE55A52475 /* CommandParser.swift */; };
 		47224464ADFE66A3183AB982 /* HalfredApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8861D53A6F1FADDB3ED3970C /* HalfredApp.swift */; };
@@ -23,9 +24,11 @@
 		A645727DFC3A003FAE3247AB /* AppScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDDE64D08C623765B6365922 /* AppScanner.swift */; };
 		BA3A6DE0F5C0449C3AB109B8 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C75B759FF77649A742F803E /* SearchView.swift */; };
 		C253D944B721F5141D289551 /* OpenCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E0D8A2D38FA6431CC4818B /* OpenCommand.swift */; };
+		CEE947F9FF93D956034F8269 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE333BB0AA24B129F168EAAE /* ClipboardHistoryView.swift */; };
 		D0A8AA6263C10D85CF3FA76C /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91462F9802605B991A9E1402 /* SettingsWindow.swift */; };
 		D1DB782C1F25C83263BEE38E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2008BC2115FFE94639A200 /* SettingsView.swift */; };
 		E555B42BE478D4FAB3178FFD /* SearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142E25647ADFB49B93235ABD /* SearchPanel.swift */; };
+		F4779FF8A002B595C61F9BB9 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D4B78C55C41D9A366449A4 /* OCRService.swift */; };
 		F5FB0D0DB9ABAF3A55846478 /* WebSearchCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BE075E6BB478784FD4648A /* WebSearchCommand.swift */; };
 		F7BB342E2F2BA834C4CDE088 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B9CA129C3706EC6AF58AE0D /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -50,7 +53,10 @@
 		91462F9802605B991A9E1402 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindow.swift; sourceTree = "<group>"; };
 		B35B0CE08116BDBA5525568A /* Halfred.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Halfred.entitlements; sourceTree = "<group>"; };
 		BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		C5D4B78C55C41D9A366449A4 /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		C61D89CD4573608F53593762 /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
+		CE333BB0AA24B129F168EAAE /* ClipboardHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryView.swift; sourceTree = "<group>"; };
+		D60410DDD4C24638AB0D2524 /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardManager.swift; sourceTree = "<group>"; };
 		DB2008BC2115FFE94639A200 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EDDE64D08C623765B6365922 /* AppScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanner.swift; sourceTree = "<group>"; };
 		F0556F3AABD5641CC9B24641 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -64,6 +70,8 @@
 				F0556F3AABD5641CC9B24641 /* AppDelegate.swift */,
 				EDDE64D08C623765B6365922 /* AppScanner.swift */,
 				3B9CA129C3706EC6AF58AE0D /* Assets.xcassets */,
+				CE333BB0AA24B129F168EAAE /* ClipboardHistoryView.swift */,
+				D60410DDD4C24638AB0D2524 /* ClipboardManager.swift */,
 				1F09DEC3239984BE55A52475 /* CommandParser.swift */,
 				22BDAA27AF41494F24C1E184 /* CommandRegistry.swift */,
 				37D497E8505F18444B13A812 /* commands.json */,
@@ -72,6 +80,7 @@
 				BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */,
 				F9D3D47810B1F7B77B3EBDD7 /* Info.plist */,
 				54EF211479605B8A7E385BEA /* LaunchAtLogin.swift */,
+				C5D4B78C55C41D9A366449A4 /* OCRService.swift */,
 				142E25647ADFB49B93235ABD /* SearchPanel.swift */,
 				813A3DA681D191AC8142D698 /* SearchTextField.swift */,
 				3C75B759FF77649A742F803E /* SearchView.swift */,
@@ -205,12 +214,15 @@
 				78A20268AF5720CD3578C2A4 /* AppDelegate.swift in Sources */,
 				5021C2A75C6EAF1613CE79BC /* AppLaunchCommand.swift in Sources */,
 				A645727DFC3A003FAE3247AB /* AppScanner.swift in Sources */,
+				CEE947F9FF93D956034F8269 /* ClipboardHistoryView.swift in Sources */,
+				3D574F46DE2E05C2846B609C /* ClipboardManager.swift in Sources */,
 				3BAEC23AA55483328922419C /* Command.swift in Sources */,
 				428126C1DF72F2293774C539 /* CommandParser.swift in Sources */,
 				59BA226530F020FDBDC906BF /* CommandRegistry.swift in Sources */,
 				47224464ADFE66A3183AB982 /* HalfredApp.swift in Sources */,
 				9F770BEC14C0D9403E991940 /* HotkeyManager.swift in Sources */,
 				520305EF69B3FD9E62AA0D2C /* LaunchAtLogin.swift in Sources */,
+				F4779FF8A002B595C61F9BB9 /* OCRService.swift in Sources */,
 				C253D944B721F5141D289551 /* OpenCommand.swift in Sources */,
 				E555B42BE478D4FAB3178FFD /* SearchPanel.swift in Sources */,
 				A061FE78F76951AE79A23855 /* SearchTextField.swift in Sources */,

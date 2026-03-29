@@ -5,15 +5,17 @@ final class SearchPanel {
     private var panel: NSPanel!
     private let commandRegistry: CommandRegistry
     private let appScanner: AppScanner
+    private let clipboardManager: ClipboardManager
 
-    init(commandRegistry: CommandRegistry, appScanner: AppScanner) {
+    init(commandRegistry: CommandRegistry, appScanner: AppScanner, clipboardManager: ClipboardManager) {
         self.commandRegistry = commandRegistry
         self.appScanner = appScanner
+        self.clipboardManager = clipboardManager
         setupPanel()
     }
 
     private func setupPanel() {
-        let searchView = SearchView(commandRegistry: commandRegistry, appScanner: appScanner) { [weak self] in
+        let searchView = SearchView(commandRegistry: commandRegistry, appScanner: appScanner, clipboardManager: clipboardManager) { [weak self] in
             self?.hide()
         }
 

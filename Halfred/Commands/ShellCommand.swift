@@ -8,8 +8,8 @@ struct ShellCommand: CommandExecutor {
         // Use osascript via Process to avoid NSAppleScript sandboxing issues
         let appleScript = """
         tell application "Terminal"
-            activate
             do script "\(escapeForAppleScript(script))"
+            activate
         end tell
         """
 

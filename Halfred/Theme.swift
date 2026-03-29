@@ -18,6 +18,8 @@ enum Theme {
     static let typeApp = Color(red: 0.30, green: 0.85, blue: 0.45)
     static let typeShell = Color(red: 1.0, green: 0.60, blue: 0.25)
     static let typeOpen = Color(red: 0.70, green: 0.50, blue: 1.0)
+    static let typeClipboard = Color(red: 0.95, green: 0.75, blue: 0.20)
+    static let ocrText = Color(red: 0.50, green: 0.80, blue: 0.95)
 }
 
 // Netflix-style NSColor for AppKit
