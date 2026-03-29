@@ -18,16 +18,14 @@ final class SearchPanel {
         let hostingView = NSHostingView(rootView: searchView)
         hostingView.sizingOptions = [.intrinsicContentSize]
 
-        panel = NSPanel(
+        panel = KeyablePanel(
             contentRect: NSRect(x: 0, y: 0, width: 680, height: 60),
-            styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .fullSizeContentView, .borderless],
             backing: .buffered,
             defer: false
         )
         panel.isFloatingPanel = true
         panel.level = .floating
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
@@ -36,9 +34,6 @@ final class SearchPanel {
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
 
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
 
         NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
@@ -76,6 +71,11 @@ final class SearchPanel {
         panel.orderOut(nil)
         NotificationCenter.default.post(name: .halfredSearchPanelHidden, object: nil)
     }
+}
+
+final class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }
 
 extension Notification.Name {
