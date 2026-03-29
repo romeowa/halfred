@@ -1,0 +1,52 @@
+{
+  "commands": [
+    {
+      "type": "web",
+      "keyword": "en",
+      "name": "네이버 영어사전",
+      "url": "https://en.dict.naver.com/#/search?query={query}"
+    },
+    {
+      "type": "web",
+      "keyword": "google",
+      "name": "Google 검색",
+      "url": "https://www.google.com/search?q={query}"
+    },
+    {
+      "type": "web",
+      "keyword": "naver",
+      "name": "네이버 검색",
+      "url": "https://search.naver.com/search.naver?query={query}"
+    },
+    {
+      "type": "app",
+      "keyword": "terminal",
+      "name": "Terminal",
+      "appName": "Terminal"
+    },
+    {
+      "type": "app",
+      "keyword": "xcode",
+      "name": "Xcode",
+      "appName": "Xcode"
+    },
+    {
+      "type": "app",
+      "keyword": "safari",
+      "name": "Safari",
+      "appName": "Safari"
+    },
+    {
+      "type": "app",
+      "keyword": "finder",
+      "name": "Finder",
+      "appName": "Finder"
+    },
+    {
+      "type": "shell",
+      "keyword": "run",
+      "name": "Run Emulators",
+      "script": "./runEmulator.sh"
+    }
+  ]
+}
