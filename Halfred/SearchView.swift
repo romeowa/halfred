@@ -4,6 +4,7 @@ import SwiftUI
 enum SearchMode {
     case clipboard
     case commands
+    case translate
 }
 
 struct SearchView: View {
@@ -18,6 +19,10 @@ struct SearchView: View {
     @State private var matchingApps: [ScannedApp] = []
     @State private var selectedIndex: Int = -1
     @State private var copiedHint: Bool = false
+    @State private var translatedText: String = ""
+    @State private var isTranslating: Bool = false
+    @State private var translationDirection: String = ""
+    @State private var translateTask: Task<Void, Never>?
 
     private var totalCount: Int {
         switch mode {
@@ -25,48 +30,86 @@ struct SearchView: View {
             return matchingCommands.prefix(10).count + matchingApps.prefix(5).count
         case .clipboard:
             return clipboardManager.filteredItems(query: query).count
+        case .translate:
+            return translatedText.isEmpty ? 0 : 1
         }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // Search bar
-            HStack(spacing: 12) {
-                Image(systemName: mode == .clipboard ? "clipboard" : "magnifyingglass")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Theme.accent)
+            if mode == .translate {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "textformat")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Theme.accent)
+                        .padding(.top, 4)
 
-                SearchTextField(
-                    text: $query,
-                    placeholder: mode == .clipboard ? "Search clipboard..." : "Type a command...",
-                    onSubmit: { executeAction() },
-                    onTab: { handleTab() },
-                    onEscape: { onDismiss() },
-                    onArrowUp: { moveSelection(-1) },
-                    onArrowDown: { moveSelection(1) },
-                    onCmd1: { switchMode(.commands) },
-                    onCmd2: { switchMode(.clipboard) }
-                )
-                .onChange(of: query) { _, newValue in
-                    if mode == .commands {
-                        updateMatches(for: newValue)
+                    MultilineSearchTextField(
+                        text: $query,
+                        placeholder: "Type to translate... (⇧Enter for newline)",
+                        onSubmit: { executeAction() },
+                        onEscape: { onDismiss() },
+                        onCmd1: { switchMode(.commands) },
+                        onCmd2: { switchMode(.clipboard) },
+                        onCmd3: { switchMode(.translate) }
+                    )
+                    .frame(minHeight: 60, maxHeight: 120)
+                    .onChange(of: query) { _, _ in
+                        translatedText = ""
+                        translationDirection = ""
                     }
-                    selectedIndex = -1
-                }
 
-                if !query.isEmpty {
-                    Button(action: { query = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(Theme.textMuted)
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    if !query.isEmpty {
+                        Button(action: { query = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(Theme.textMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
                     }
                 }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: mode == .clipboard ? "clipboard" : "magnifyingglass")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Theme.accent)
+
+                    SearchTextField(
+                        text: $query,
+                        placeholder: mode == .clipboard ? "Search clipboard..." : "Type a command...",
+                        onSubmit: { executeAction() },
+                        onTab: { handleTab() },
+                        onEscape: { onDismiss() },
+                        onArrowUp: { moveSelection(-1) },
+                        onArrowDown: { moveSelection(1) },
+                        onCmd1: { switchMode(.commands) },
+                        onCmd2: { switchMode(.clipboard) },
+                        onCmd3: { switchMode(.translate) }
+                    )
+                    .onChange(of: query) { _, newValue in
+                        if mode == .commands {
+                            updateMatches(for: newValue)
+                        }
+                        selectedIndex = -1
+                    }
+
+                    if !query.isEmpty {
+                        Button(action: { query = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(Theme.textMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { hovering in
+                            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                        }
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
 
             // Mode toggle (⌘1 Commands, ⌘2 Clipboard)
             HStack(spacing: 0) {
@@ -75,6 +118,9 @@ struct SearchView: View {
                 }
                 modeButton(title: "Clipboard", icon: "clipboard", shortcut: "⌘2", isSelected: mode == .clipboard) {
                     switchMode(.clipboard)
+                }
+                modeButton(title: "Translate", icon: "textformat", shortcut: "⌘3", isSelected: mode == .translate) {
+                    switchMode(.translate)
                 }
                 Spacer()
             }
@@ -154,6 +200,13 @@ struct SearchView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 6)
                 }
+
+            case .translate:
+                Rectangle()
+                    .fill(Theme.border)
+                    .frame(height: 1)
+
+                translateContent()
             }
         }
         .background(Theme.background)
@@ -193,6 +246,10 @@ struct SearchView: View {
             matchingCommands = commandRegistry.allCommands()
             matchingApps = []
             selectedIndex = -1
+            translatedText = ""
+            translationDirection = ""
+            isTranslating = false
+            translateTask?.cancel()
             switchToEnglishInput()
         }
     }
@@ -216,6 +273,112 @@ struct SearchView: View {
             if sourceID.contains("ABC") || sourceID.contains("US") || sourceID.contains("com.apple.keylayout.ABC") {
                 TISSelectInputSource(source)
                 return
+            }
+        }
+    }
+
+    // MARK: - Translation
+
+    private func triggerTranslation(for text: String) {
+        translateTask?.cancel()
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        isTranslating = true
+        translateTask = Task {
+
+            let result = await TranslationService.shared.translate(text: trimmed)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                if let result = result {
+                    translatedText = result.translated
+                    let srcLabel = result.sourceLang == "ko" ? "Korean" : languageName(result.sourceLang)
+                    let tgtLabel = result.targetLang == "ko" ? "Korean" : "English"
+                    translationDirection = "\(srcLabel) → \(tgtLabel)"
+                } else {
+                    translatedText = ""
+                    translationDirection = ""
+                }
+                isTranslating = false
+            }
+        }
+    }
+
+    private func languageName(_ code: String) -> String {
+        switch code {
+        case "ko": return "Korean"
+        case "en": return "English"
+        case "ja": return "Japanese"
+        case "zh-CN", "zh-TW", "zh": return "Chinese"
+        default: return code.uppercased()
+        }
+    }
+
+    @ViewBuilder
+    private func translateContent() -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isTranslating {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.vertical, 16)
+                    Spacer()
+                }
+            } else if !translatedText.isEmpty {
+                // Direction label
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(Theme.accent)
+                    Text(translationDirection)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Theme.textMuted)
+                    Spacer()
+                    Button(action: {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(translatedText, forType: .string)
+                        showCopiedHint()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 10))
+                            Text("Copy")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(Theme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Theme.surfaceLight))
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+
+                // Translated text
+                Text(translatedText)
+                    .font(.system(size: 15))
+                    .foregroundColor(Theme.textPrimary)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 14)
+            } else {
+                HStack {
+                    Spacer()
+                    Text(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                         ? "Type text and press Enter to translate"
+                         : "Press Enter to translate")
+                        .font(.system(size: 13))
+                        .foregroundColor(Theme.textMuted)
+                        .padding(.vertical, 16)
+                    Spacer()
+                }
             }
         }
     }
@@ -257,6 +420,12 @@ struct SearchView: View {
         selectedIndex = -1
         if newMode == .commands {
             updateMatches(for: query)
+        } else if newMode == .translate {
+            triggerTranslation(for: query)
+        }
+        // Re-focus input field after mode switch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            NotificationCenter.default.post(name: .halfredFocusInput, object: nil)
         }
     }
 
@@ -279,6 +448,15 @@ struct SearchView: View {
 
         case .commands:
             executeCommand()
+
+        case .translate:
+            if !translatedText.isEmpty {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(translatedText, forType: .string)
+                showCopiedHint()
+            } else {
+                triggerTranslation(for: query)
+            }
         }
     }
 

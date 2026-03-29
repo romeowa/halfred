@@ -85,4 +85,5 @@ final class KeyablePanel: NSPanel {
 extension Notification.Name {
     static let halfredSearchPanelShown = Notification.Name("halfredSearchPanelShown")
     static let halfredSearchPanelHidden = Notification.Name("halfredSearchPanelHidden")
+    static let halfredFocusInput = Notification.Name("halfredFocusInput")
 }

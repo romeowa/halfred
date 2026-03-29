@@ -31,6 +31,7 @@
 		F4779FF8A002B595C61F9BB9 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D4B78C55C41D9A366449A4 /* OCRService.swift */; };
 		F5FB0D0DB9ABAF3A55846478 /* WebSearchCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BE075E6BB478784FD4648A /* WebSearchCommand.swift */; };
 		F7BB342E2F2BA834C4CDE088 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B9CA129C3706EC6AF58AE0D /* Assets.xcassets */; };
+		AA1122334455667788990011 /* TranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2233445566778899001122 /* TranslationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +62,7 @@
 		EDDE64D08C623765B6365922 /* AppScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanner.swift; sourceTree = "<group>"; };
 		F0556F3AABD5641CC9B24641 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F9D3D47810B1F7B77B3EBDD7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BB2233445566778899001122 /* TranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -87,6 +89,7 @@
 				DB2008BC2115FFE94639A200 /* SettingsView.swift */,
 				91462F9802605B991A9E1402 /* SettingsWindow.swift */,
 				0DD47D84DA4DE17394FE45A9 /* Theme.swift */,
+				BB2233445566778899001122 /* TranslationService.swift */,
 				5A2A2CFEDA75A5DF5EC1351A /* WindowManager.swift */,
 				8BCE96018B1CF20F89719DEA /* Commands */,
 			);
@@ -231,6 +234,7 @@
 				D0A8AA6263C10D85CF3FA76C /* SettingsWindow.swift in Sources */,
 				63202B2DE369AF8D13A9CB54 /* ShellCommand.swift in Sources */,
 				2E71B7A131B99629A02C1FC1 /* Theme.swift in Sources */,
+				AA1122334455667788990011 /* TranslationService.swift in Sources */,
 				F5FB0D0DB9ABAF3A55846478 /* WebSearchCommand.swift in Sources */,
 				251A55690A2E2E97A1C8E30F /* WindowManager.swift in Sources */,
 			);
