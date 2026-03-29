@@ -4,9 +4,11 @@ import SwiftUI
 final class SettingsWindow {
     private var window: NSWindow?
     private let commandRegistry: CommandRegistry
+    private let windowManager: WindowManager
 
-    init(commandRegistry: CommandRegistry) {
+    init(commandRegistry: CommandRegistry, windowManager: WindowManager) {
         self.commandRegistry = commandRegistry
+        self.windowManager = windowManager
     }
 
     func show() {
@@ -17,7 +19,7 @@ final class SettingsWindow {
         }
 
         // Recreate window to ensure fresh SwiftUI rendering
-        let settingsView = SettingsView(commandRegistry: commandRegistry)
+        let settingsView = SettingsView(commandRegistry: commandRegistry, windowManager: windowManager)
         let hostingController = NSHostingController(rootView: settingsView)
 
         let window = EscClosableWindow(contentViewController: hostingController)
@@ -30,8 +32,10 @@ final class SettingsWindow {
         window.titlebarAppearsTransparent = true
         window.appearance = NSAppearance(named: .darkAqua)
         window.isReleasedWhenClosed = false
+        window.level = .floating
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        window.level = .normal
 
         self.window = window
     }

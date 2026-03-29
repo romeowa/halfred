@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var commandRegistry: CommandRegistry
+    let windowManager: WindowManager
     @State private var editingCommand: CommandEntry?
     @State private var isAdding = false
     @State private var selectedTab = 0
@@ -15,6 +16,9 @@ struct SettingsView: View {
                 }
                 SettingsTabButton(title: "Commands", icon: "command", isSelected: selectedTab == 1) {
                     selectedTab = 1
+                }
+                SettingsTabButton(title: "Window", icon: "macwindow", isSelected: selectedTab == 2) {
+                    selectedTab = 2
                 }
                 Spacer()
             }
@@ -31,13 +35,16 @@ struct SettingsView: View {
             if selectedTab == 0 {
                 GeneralTab()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+            } else if selectedTab == 1 {
                 CommandsTab(
                     commandRegistry: commandRegistry,
                     editingCommand: $editingCommand,
                     isAdding: $isAdding
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                WindowTab(windowManager: windowManager)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -104,6 +111,7 @@ struct SettingsTabButton: View {
 
 struct GeneralTab: View {
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
+    @State private var accessibilityGranted = WindowManager.isAccessibilityGranted
 
     var body: some View {
         ScrollView {
@@ -153,8 +161,188 @@ struct GeneralTab: View {
                     .padding(14)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
                 }
+                // Permissions section
+                SettingsSection(title: "PERMISSIONS") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 10) {
+                            Image(systemName: accessibilityGranted ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(accessibilityGranted ? Theme.typeApp : .orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Accessibility Access")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Theme.textPrimary)
+                                Text(accessibilityGranted
+                                     ? "Accessibility permission is granted."
+                                     : "Window Snapping and Shell commands need Accessibility permission to control other apps.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(accessibilityGranted ? Theme.textSecondary : .orange.opacity(0.9))
+                            }
+                        }
+
+                        if !accessibilityGranted {
+                            Button(action: {
+                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.up.forward.square")
+                                        .font(.system(size: 11))
+                                    Text("Open Accessibility Settings")
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(Theme.accent))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
+                    .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                        accessibilityGranted = WindowManager.isAccessibilityGranted
+                    }
+                }
             }
             .padding(20)
+        }
+    }
+}
+
+// MARK: - Window Tab
+
+struct WindowTab: View {
+    let windowManager: WindowManager
+    @State private var isEnabled: Bool
+
+    init(windowManager: WindowManager) {
+        self.windowManager = windowManager
+        _isEnabled = State(initialValue: windowManager.isEnabled)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsSection(title: "WINDOW SNAPPING") {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Enable Window Snapping")
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.textPrimary)
+                            Text("Snap windows to screen edges with keyboard shortcuts")
+                                .font(.system(size: 11))
+                                .foregroundColor(Theme.textMuted)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $isEnabled)
+                            .toggleStyle(.switch)
+                            .tint(Theme.accent)
+                            .onChange(of: isEnabled) { _, newValue in
+                                windowManager.isEnabled = newValue
+                            }
+                    }
+                    .contentShape(Rectangle())
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
+                }
+
+                SettingsSection(title: "SHORTCUTS") {
+                    VStack(spacing: 1) {
+                        SnapShortcutRow(
+                            title: "Snap Left",
+                            description: "Cycle: 1/2 → 1/3 → 2/3",
+                            keys: ["⌥", "⌘", "←"],
+                            isFirst: true
+                        )
+                        SnapShortcutRow(
+                            title: "Snap Right",
+                            description: "Cycle: 1/2 → 1/3 → 2/3",
+                            keys: ["⌥", "⌘", "→"],
+                            isFirst: false
+                        )
+                        SnapShortcutRow(
+                            title: "Fullscreen",
+                            description: "Expand to fill the screen",
+                            keys: ["⌥", "⌘", "↑"],
+                            isFirst: false
+                        )
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                SettingsSection(title: "HOW IT WORKS") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Press ⌥⌘← or ⌥⌘→ repeatedly to cycle through window sizes. The window snaps to the corresponding edge of the screen.")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.textSecondary)
+
+                        HStack(spacing: 16) {
+                            SnapPreview(label: "1/2", fraction: 0.5)
+                            SnapPreview(label: "1/3", fraction: 0.333)
+                            SnapPreview(label: "2/3", fraction: 0.667)
+                        }
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface))
+                }
+            }
+            .padding(20)
+        }
+    }
+}
+
+struct SnapShortcutRow: View {
+    let title: String
+    let description: String
+    let keys: [String]
+    let isFirst: Bool
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14))
+                    .foregroundColor(Theme.textPrimary)
+                Text(description)
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textMuted)
+            }
+            Spacer()
+            HStack(spacing: 4) {
+                ForEach(keys, id: \.self) { key in
+                    KeyCap(text: key)
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .padding(14)
+        .background(Theme.surface)
+    }
+}
+
+struct SnapPreview: View {
+    let label: String
+    let fraction: CGFloat
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Theme.surfaceLight)
+                    .frame(width: 60, height: 40)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Theme.accent.opacity(0.4))
+                    .frame(width: 60 * fraction, height: 40)
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Theme.border, lineWidth: 1)
+            )
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(Theme.textMuted)
         }
     }
 }

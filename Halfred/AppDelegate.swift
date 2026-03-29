@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow!
     private let hotkeyManager = HotkeyManager()
     private let commandRegistry = CommandRegistry()
+    private let windowManager = WindowManager()
+    private let appScanner = AppScanner()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupCommandRegistry()
@@ -15,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupSearchPanel()
         setupSettingsWindow()
         setupHotkey()
+        WindowManager.promptAccessibilityOnFirstLaunch()
     }
 
     private func setupCommandRegistry() {
@@ -38,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupSearchPanel() {
-        searchPanel = SearchPanel(commandRegistry: commandRegistry)
+        searchPanel = SearchPanel(commandRegistry: commandRegistry, appScanner: appScanner)
     }
 
     private func setupHotkey() {
@@ -50,10 +53,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.searchPanel.hide()
             self?.openSettings()
         }
+        // ⌥⌘← Snap left
+        hotkeyManager.register(id: 10, keyCode: 123, modifiers: UInt32(optionKey | cmdKey)) { [weak self] in
+            self?.windowManager.snapLeft()
+        }
+        // ⌥⌘→ Snap right
+        hotkeyManager.register(id: 11, keyCode: 124, modifiers: UInt32(optionKey | cmdKey)) { [weak self] in
+            self?.windowManager.snapRight()
+        }
+        // ⌥⌘↑ Snap full
+        hotkeyManager.register(id: 12, keyCode: 126, modifiers: UInt32(optionKey | cmdKey)) { [weak self] in
+            self?.windowManager.snapFull()
+        }
     }
 
     private func setupSettingsWindow() {
-        settingsWindow = SettingsWindow(commandRegistry: commandRegistry)
+        settingsWindow = SettingsWindow(commandRegistry: commandRegistry, windowManager: windowManager)
     }
 
     @objc private func toggleSearchPanel() {

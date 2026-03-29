@@ -24,3 +24,13 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGNING_REQUIRED: false
+    postBuildScripts:
+      - script: |
+          # Kill running Halfred in /Applications (if any)
+          killall Halfred 2>/dev/null || true
+          sleep 0.5
+          # Copy built app to /Applications
+          rm -rf /Applications/Halfred.app
+          cp -R "${BUILT_PRODUCTS_DIR}/Halfred.app" /Applications/Halfred.app
+          echo "Halfred installed to /Applications/Halfred.app"
+        name: "Install to /Applications"

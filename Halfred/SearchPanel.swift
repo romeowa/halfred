@@ -4,14 +4,16 @@ import SwiftUI
 final class SearchPanel {
     private var panel: NSPanel!
     private let commandRegistry: CommandRegistry
+    private let appScanner: AppScanner
 
-    init(commandRegistry: CommandRegistry) {
+    init(commandRegistry: CommandRegistry, appScanner: AppScanner) {
         self.commandRegistry = commandRegistry
+        self.appScanner = appScanner
         setupPanel()
     }
 
     private func setupPanel() {
-        let searchView = SearchView(commandRegistry: commandRegistry) { [weak self] in
+        let searchView = SearchView(commandRegistry: commandRegistry, appScanner: appScanner) { [weak self] in
             self?.hide()
         }
 
