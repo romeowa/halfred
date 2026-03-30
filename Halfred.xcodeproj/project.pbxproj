@@ -22,6 +22,7 @@
 		78A20268AF5720CD3578C2A4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0556F3AABD5641CC9B24641 /* AppDelegate.swift */; };
 		9F770BEC14C0D9403E991940 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */; };
 		A061FE78F76951AE79A23855 /* SearchTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 813A3DA681D191AC8142D698 /* SearchTextField.swift */; };
+		A3CFE6B4AE5C01417989A33C /* FilePathCompleter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955F199743D2945EE44B3A21 /* FilePathCompleter.swift */; };
 		A645727DFC3A003FAE3247AB /* AppScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDDE64D08C623765B6365922 /* AppScanner.swift */; };
 		BA3A6DE0F5C0449C3AB109B8 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C75B759FF77649A742F803E /* SearchView.swift */; };
 		C253D944B721F5141D289551 /* OpenCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E0D8A2D38FA6431CC4818B /* OpenCommand.swift */; };
@@ -53,6 +54,7 @@
 		813A3DA681D191AC8142D698 /* SearchTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextField.swift; sourceTree = "<group>"; };
 		8861D53A6F1FADDB3ED3970C /* HalfredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HalfredApp.swift; sourceTree = "<group>"; };
 		91462F9802605B991A9E1402 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindow.swift; sourceTree = "<group>"; };
+		955F199743D2945EE44B3A21 /* FilePathCompleter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePathCompleter.swift; sourceTree = "<group>"; };
 		B35B0CE08116BDBA5525568A /* Halfred.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Halfred.entitlements; sourceTree = "<group>"; };
 		BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		C5D4B78C55C41D9A366449A4 /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 				1F09DEC3239984BE55A52475 /* CommandParser.swift */,
 				22BDAA27AF41494F24C1E184 /* CommandRegistry.swift */,
 				37D497E8505F18444B13A812 /* commands.json */,
+				955F199743D2945EE44B3A21 /* FilePathCompleter.swift */,
 				B35B0CE08116BDBA5525568A /* Halfred.entitlements */,
 				8861D53A6F1FADDB3ED3970C /* HalfredApp.swift */,
 				BBC01BD1FF94B63D21A7E95B /* HotkeyManager.swift */,
@@ -205,7 +208,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Kill running Halfred in /Applications (if any)\nkillall Halfred 2>/dev/null || true\nsleep 0.5\n# Copy built app to /Applications\nrm -rf /Applications/Halfred.app\ncp -R \"${BUILT_PRODUCTS_DIR}/Halfred.app\" /Applications/Halfred.app\n# Re-sign the whole bundle (cp -R can break signatures)\ncodesign --force --deep --sign - /Applications/Halfred.app 2>/dev/null || true\nxattr -dr com.apple.quarantine /Applications/Halfred.app 2>/dev/null || true\necho \"Halfred installed to /Applications/Halfred.app\"\n";
+			shellScript = "# Kill running Halfred in /Applications (if any)\nkillall Halfred 2>/dev/null || true\nsleep 0.5\n# Copy built app to /Applications\nrm -rf /Applications/Halfred.app\ncp -R \"${BUILT_PRODUCTS_DIR}/Halfred.app\" /Applications/Halfred.app\nxattr -dr com.apple.quarantine /Applications/Halfred.app 2>/dev/null || true\necho \"Halfred installed to /Applications/Halfred.app\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -222,6 +225,7 @@
 				3BAEC23AA55483328922419C /* Command.swift in Sources */,
 				428126C1DF72F2293774C539 /* CommandParser.swift in Sources */,
 				59BA226530F020FDBDC906BF /* CommandRegistry.swift in Sources */,
+				A3CFE6B4AE5C01417989A33C /* FilePathCompleter.swift in Sources */,
 				47224464ADFE66A3183AB982 /* HalfredApp.swift in Sources */,
 				9F770BEC14C0D9403E991940 /* HotkeyManager.swift in Sources */,
 				520305EF69B3FD9E62AA0D2C /* LaunchAtLogin.swift in Sources */,

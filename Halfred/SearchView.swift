@@ -26,6 +26,7 @@ struct SearchView: View {
     @State private var translationDirection: String = ""
     @State private var translateTask: Task<Void, Never>?
     @State private var runningApps: [NSRunningApplication] = []
+    @State private var pathSuggestions: [PathItem] = []
 
     private var filteredRunningApps: [NSRunningApplication] {
         let q = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -38,6 +39,7 @@ struct SearchView: View {
     private var totalCount: Int {
         switch mode {
         case .commands:
+            if !pathSuggestions.isEmpty { return pathSuggestions.count }
             return matchingCommands.prefix(10).count + matchingApps.prefix(5).count
         case .clipboard:
             return clipboardManager.filteredItems(query: query).count
@@ -171,7 +173,26 @@ struct SearchView: View {
                     )
 
             case .commands:
-                if !matchingCommands.isEmpty || !matchingApps.isEmpty {
+                if !pathSuggestions.isEmpty {
+                    Rectangle()
+                        .fill(Theme.border)
+                        .frame(height: 1)
+
+                    VStack(spacing: 2) {
+                        ForEach(Array(pathSuggestions.enumerated()), id: \.element.id) { index, item in
+                            let isSelected = index == selectedIndex
+                            pathRow(item: item, isSelected: isSelected)
+                                .onHover { hovering in
+                                    if hovering { selectedIndex = index }
+                                }
+                                .onTapGesture {
+                                    selectPathItem(item)
+                                }
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
+                } else if !matchingCommands.isEmpty || !matchingApps.isEmpty {
                     Rectangle()
                         .fill(Theme.border)
                         .frame(height: 1)
@@ -273,6 +294,7 @@ struct SearchView: View {
             copiedHint = false
             matchingCommands = restored == .commands ? commandRegistry.allCommands() : []
             matchingApps = []
+            pathSuggestions = []
             runningApps = []
             selectedIndex = -1
             translatedText = ""
@@ -610,6 +632,11 @@ struct SearchView: View {
         if keyword.isEmpty {
             matchingCommands = commandRegistry.allCommands()
             matchingApps = []
+            pathSuggestions = []
+        } else if let argument = CommandParser.parseArgument(from: input), isPathPrefix(argument) {
+            matchingCommands = []
+            matchingApps = []
+            pathSuggestions = FilePathCompleter.complete(partial: argument)
         } else if CommandParser.parseArgument(from: input) == nil {
             matchingCommands = commandRegistry.search(prefix: keyword)
             let registeredAppNames = Set(
@@ -618,11 +645,17 @@ struct SearchView: View {
             matchingApps = appScanner.search(prefix: keyword).filter {
                 !registeredAppNames.contains($0.name.lowercased())
             }
+            pathSuggestions = []
         } else {
             matchingCommands = []
             matchingApps = []
+            pathSuggestions = []
         }
         selectedIndex = -1
+    }
+
+    private func isPathPrefix(_ text: String) -> Bool {
+        text.hasPrefix("./") || text.hasPrefix("~/") || text.hasPrefix("/")
     }
 
     private func moveSelection(_ delta: Int) {
@@ -645,6 +678,14 @@ struct SearchView: View {
     }
 
     private func autocomplete() {
+        // Path completion mode
+        if !pathSuggestions.isEmpty {
+            let index = selectedIndex >= 0 ? selectedIndex : 0
+            guard index < pathSuggestions.count else { return }
+            selectPathItem(pathSuggestions[index])
+            return
+        }
+
         let cmdCount = matchingCommands.prefix(10).count
         if selectedIndex >= 0, selectedIndex < cmdCount {
             query = matchingKeyword(for: matchingCommands[selectedIndex]) + " "
@@ -673,6 +714,31 @@ struct SearchView: View {
     }
 
     private func executeCommand() {
+        // Path mode: Enter opens in Finder
+        if !pathSuggestions.isEmpty {
+            if selectedIndex >= 0, selectedIndex < pathSuggestions.count {
+                // Open the selected suggestion
+                let item = pathSuggestions[selectedIndex]
+                let url = URL(fileURLWithPath: item.fullPath)
+                NSWorkspace.shared.open(url)
+            } else if let argument = CommandParser.parseArgument(from: query) {
+                // No selection — open the currently typed path
+                let resolved = FilePathCompleter.resolve(argument)
+                let url = URL(fileURLWithPath: resolved)
+                NSWorkspace.shared.open(url)
+            }
+            onDismiss()
+            return
+        }
+        // Also handle direct path argument without suggestions visible
+        if let argument = CommandParser.parseArgument(from: query), isPathPrefix(argument) {
+            let resolved = FilePathCompleter.resolve(argument)
+            let url = URL(fileURLWithPath: resolved)
+            NSWorkspace.shared.open(url)
+            onDismiss()
+            return
+        }
+
         let cmdCount = matchingCommands.prefix(10).count
 
         if selectedIndex >= cmdCount, selectedIndex < totalCount {
@@ -811,6 +877,82 @@ struct SearchView: View {
                 .stroke(isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
+    }
+
+    // MARK: - Path Completion
+
+    private func selectPathItem(_ item: PathItem) {
+        let keyword = CommandParser.parseKeyword(from: query)
+        let argument = CommandParser.parseArgument(from: query) ?? ""
+        let completed = FilePathCompleter.completionText(for: item, originalPartial: argument)
+        query = keyword + " " + completed
+        if !item.isDirectory {
+            // File selected — ready to execute
+            selectedIndex = -1
+        }
+    }
+
+    @ViewBuilder
+    private func pathRow(item: PathItem, isSelected: Bool) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? Theme.accent.opacity(0.2) : Theme.surfaceLight)
+                    .frame(width: 30, height: 30)
+                Image(systemName: item.isDirectory ? "folder.fill" : fileIcon(for: item.name))
+                    .font(.system(size: 13))
+                    .foregroundColor(isSelected ? Theme.accent : item.isDirectory ? Theme.typeOpen : Theme.textMuted)
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.name + (item.isDirectory ? "/" : ""))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.9))
+                Text(item.fullPath)
+                    .font(.system(size: 11))
+                    .foregroundColor(isSelected ? Theme.textSecondary : Theme.textMuted)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            Spacer()
+
+            Text(item.isDirectory ? "DIR" : "FILE")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(isSelected ? Theme.accent : Theme.textMuted)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isSelected ? Theme.accent.opacity(0.15) : Theme.surfaceLight)
+                )
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Theme.accent.opacity(0.12) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+    }
+
+    private func fileIcon(for name: String) -> String {
+        let ext = (name as NSString).pathExtension.lowercased()
+        switch ext {
+        case "pdf": return "doc.fill"
+        case "png", "jpg", "jpeg", "gif", "webp", "heic": return "photo.fill"
+        case "mp4", "mov", "avi", "mkv": return "film.fill"
+        case "mp3", "wav", "aac", "flac": return "music.note"
+        case "zip", "tar", "gz", "rar": return "archivebox.fill"
+        case "swift", "py", "js", "ts", "rs", "go", "java": return "chevron.left.forwardslash.chevron.right"
+        case "txt", "md", "json", "yml", "yaml", "xml": return "doc.text.fill"
+        case "app": return "app.fill"
+        default: return "doc.fill"
+        }
     }
 
     private func iconName(for type: String) -> String {
