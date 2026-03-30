@@ -4,6 +4,7 @@ import SwiftUI
 enum SearchMode {
     case clipboard
     case commands
+    case runningApps
     case translate
 }
 
@@ -23,6 +24,15 @@ struct SearchView: View {
     @State private var isTranslating: Bool = false
     @State private var translationDirection: String = ""
     @State private var translateTask: Task<Void, Never>?
+    @State private var runningApps: [NSRunningApplication] = []
+
+    private var filteredRunningApps: [NSRunningApplication] {
+        let q = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if q.isEmpty { return runningApps }
+        return runningApps.filter { app in
+            app.localizedName?.lowercased().contains(q) == true
+        }
+    }
 
     private var totalCount: Int {
         switch mode {
@@ -30,6 +40,8 @@ struct SearchView: View {
             return matchingCommands.prefix(10).count + matchingApps.prefix(5).count
         case .clipboard:
             return clipboardManager.filteredItems(query: query).count
+        case .runningApps:
+            return filteredRunningApps.count
         case .translate:
             return translatedText.isEmpty ? 0 : 1
         }
@@ -52,7 +64,8 @@ struct SearchView: View {
                         onEscape: { onDismiss() },
                         onCmd1: { switchMode(.commands) },
                         onCmd2: { switchMode(.clipboard) },
-                        onCmd3: { switchMode(.translate) }
+                        onCmd3: { switchMode(.runningApps) },
+                        onCmd4: { switchMode(.translate) }
                     )
                     .frame(minHeight: 60, maxHeight: 120)
                     .onChange(of: query) { _, _ in
@@ -73,21 +86,24 @@ struct SearchView: View {
                 .padding(.vertical, 14)
             } else {
                 HStack(spacing: 12) {
-                    Image(systemName: mode == .clipboard ? "clipboard" : "magnifyingglass")
+                    Image(systemName: mode == .clipboard ? "clipboard" : mode == .runningApps ? "macwindow.on.rectangle" : "magnifyingglass")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Theme.accent)
 
                     SearchTextField(
                         text: $query,
-                        placeholder: mode == .clipboard ? "Search clipboard..." : "Type a command...",
+                        placeholder: mode == .clipboard ? "Search clipboard..." : mode == .runningApps ? "Search running apps..." : "Type a command...",
                         onSubmit: { executeAction() },
                         onTab: { handleTab() },
                         onEscape: { onDismiss() },
                         onArrowUp: { moveSelection(-1) },
                         onArrowDown: { moveSelection(1) },
+                        onArrowLeft: { moveSelectionHorizontal(-1) },
+                        onArrowRight: { moveSelectionHorizontal(1) },
                         onCmd1: { switchMode(.commands) },
                         onCmd2: { switchMode(.clipboard) },
-                        onCmd3: { switchMode(.translate) }
+                        onCmd3: { switchMode(.runningApps) },
+                        onCmd4: { switchMode(.translate) }
                     )
                     .onChange(of: query) { _, newValue in
                         if mode == .commands {
@@ -119,7 +135,10 @@ struct SearchView: View {
                 modeButton(title: "Clipboard", icon: "clipboard", shortcut: "⌘2", isSelected: mode == .clipboard) {
                     switchMode(.clipboard)
                 }
-                modeButton(title: "Translate", icon: "textformat", shortcut: "⌘3", isSelected: mode == .translate) {
+                modeButton(title: "Running", icon: "macwindow.on.rectangle", shortcut: "⌘3", isSelected: mode == .runningApps) {
+                    switchMode(.runningApps)
+                }
+                modeButton(title: "Translate", icon: "textformat", shortcut: "⌘4", isSelected: mode == .translate) {
                     switchMode(.translate)
                 }
                 Spacer()
@@ -201,6 +220,13 @@ struct SearchView: View {
                     .padding(.vertical, 6)
                 }
 
+            case .runningApps:
+                Rectangle()
+                    .fill(Theme.border)
+                    .frame(height: 1)
+
+                runningAppsContent()
+
             case .translate:
                 Rectangle()
                     .fill(Theme.border)
@@ -245,6 +271,7 @@ struct SearchView: View {
             copiedHint = false
             matchingCommands = commandRegistry.allCommands()
             matchingApps = []
+            runningApps = []
             selectedIndex = -1
             translatedText = ""
             translationDirection = ""
@@ -383,6 +410,102 @@ struct SearchView: View {
         }
     }
 
+    // MARK: - Running Apps
+
+    private func activateRunningApp(_ app: NSRunningApplication) {
+        onDismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            app.unhide()
+            if let bundleURL = app.bundleURL {
+                let config = NSWorkspace.OpenConfiguration()
+                config.activates = true
+                NSWorkspace.shared.openApplication(at: bundleURL, configuration: config)
+            } else {
+                app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            }
+        }
+    }
+
+    private func refreshRunningApps() {
+        runningApps = NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular && $0.localizedName != nil }
+            .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
+    }
+
+    private let runningAppsColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
+
+    @ViewBuilder
+    private func runningAppsContent() -> some View {
+        let apps = filteredRunningApps
+        if apps.isEmpty {
+            HStack {
+                Spacer()
+                Text("No running apps found")
+                    .font(.system(size: 13))
+                    .foregroundColor(Theme.textMuted)
+                    .padding(.vertical, 16)
+                Spacer()
+            }
+        } else {
+            LazyVGrid(columns: runningAppsColumns, spacing: 8) {
+                ForEach(Array(apps.enumerated()), id: \.element.processIdentifier) { index, app in
+                    let isSelected = index == selectedIndex
+                    runningAppCell(app: app, isSelected: isSelected)
+                        .onHover { hovering in
+                            if hovering { selectedIndex = index }
+                        }
+                        .onTapGesture {
+                            activateRunningApp(app)
+                        }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+    }
+
+    @ViewBuilder
+    private func runningAppCell(app: NSRunningApplication, isSelected: Bool) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                if let icon = app.icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 36, height: 36)
+                } else {
+                    Image(systemName: "app.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(isSelected ? Theme.accent : Theme.typeApp)
+                }
+
+                if app.isActive {
+                    Circle()
+                        .fill(Theme.typeApp)
+                        .frame(width: 8, height: 8)
+                        .offset(x: 16, y: -16)
+                }
+            }
+
+            Text(app.localizedName ?? "Unknown")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(isSelected ? Theme.textPrimary : Theme.textPrimary.opacity(0.85))
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSelected ? Theme.accent.opacity(0.12) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+    }
+
     // MARK: - Mode Button
 
     @ViewBuilder
@@ -420,6 +543,8 @@ struct SearchView: View {
         selectedIndex = -1
         if newMode == .commands {
             updateMatches(for: query)
+        } else if newMode == .runningApps {
+            refreshRunningApps()
         } else if newMode == .translate {
             triggerTranslation(for: query)
         }
@@ -448,6 +573,12 @@ struct SearchView: View {
 
         case .commands:
             executeCommand()
+
+        case .runningApps:
+            let apps = filteredRunningApps
+            let index = selectedIndex >= 0 ? selectedIndex : 0
+            guard index < apps.count else { return }
+            activateRunningApp(apps[index])
 
         case .translate:
             if !translatedText.isEmpty {
@@ -492,14 +623,21 @@ struct SearchView: View {
 
     private func moveSelection(_ delta: Int) {
         guard totalCount > 0 else { return }
-        let newIndex = selectedIndex + delta
-        if newIndex < 0 {
-            selectedIndex = totalCount - 1
-        } else if newIndex >= totalCount {
-            selectedIndex = 0
-        } else {
-            selectedIndex = newIndex
-        }
+        let step = (mode == .runningApps) ? delta * runningAppsColumns.count : delta
+        var newIndex = selectedIndex + step
+        if newIndex < 0 { newIndex = totalCount - 1 }
+        else if newIndex >= totalCount { newIndex = 0 }
+        selectedIndex = newIndex
+    }
+
+    @discardableResult
+    private func moveSelectionHorizontal(_ delta: Int) -> Bool {
+        guard mode == .runningApps, totalCount > 0 else { return false }
+        var newIndex = selectedIndex + delta
+        if newIndex < 0 { newIndex = totalCount - 1 }
+        else if newIndex >= totalCount { newIndex = 0 }
+        selectedIndex = newIndex
+        return true
     }
 
     private func autocomplete() {
