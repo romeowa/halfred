@@ -75,7 +75,7 @@ mkdir -p "$DMG_TEMP"
 cp -R "$APP_PATH" "$DMG_TEMP/"
 ln -s /Applications "$DMG_TEMP/Applications"
 
-hdiutil create -volname "$APP_NAME" \
+hdiutil create -volname "${APP_NAME} ${VERSION}" \
     -srcfolder "$DMG_TEMP" \
     -ov -format UDZO \
     "$DMG_PATH" \
