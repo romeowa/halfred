@@ -1,7 +1,7 @@
 import Carbon
 import SwiftUI
 
-enum SearchMode {
+enum SearchMode: String {
     case clipboard
     case commands
     case runningApps
@@ -15,6 +15,7 @@ struct SearchView: View {
     let onDismiss: () -> Void
 
     @State private var query: String = ""
+    @AppStorage("lastSearchMode") private var savedMode: String = SearchMode.commands.rawValue
     @State private var mode: SearchMode = .commands
     @State private var matchingCommands: [CommandEntry] = []
     @State private var matchingApps: [ScannedApp] = []
@@ -267,9 +268,10 @@ struct SearchView: View {
         )
         .onReceive(NotificationCenter.default.publisher(for: .halfredSearchPanelShown)) { _ in
             query = ""
-            mode = .commands
+            let restored = SearchMode(rawValue: savedMode) ?? .commands
+            mode = restored
             copiedHint = false
-            matchingCommands = commandRegistry.allCommands()
+            matchingCommands = restored == .commands ? commandRegistry.allCommands() : []
             matchingApps = []
             runningApps = []
             selectedIndex = -1
@@ -277,6 +279,7 @@ struct SearchView: View {
             translationDirection = ""
             isTranslating = false
             translateTask?.cancel()
+            if restored == .runningApps { refreshRunningApps() }
             switchToEnglishInput()
         }
     }
@@ -540,6 +543,7 @@ struct SearchView: View {
 
     private func switchMode(_ newMode: SearchMode) {
         mode = newMode
+        savedMode = newMode.rawValue
         selectedIndex = -1
         if newMode == .commands {
             updateMatches(for: query)
