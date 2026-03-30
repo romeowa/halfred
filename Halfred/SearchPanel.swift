@@ -21,6 +21,9 @@ final class SearchPanel {
 
         let hostingView = NSHostingView(rootView: searchView)
         hostingView.sizingOptions = [.intrinsicContentSize]
+        hostingView.wantsLayer = true
+        hostingView.layer?.cornerRadius = 14
+        hostingView.layer?.masksToBounds = true
 
         panel = KeyablePanel(
             contentRect: NSRect(x: 0, y: 0, width: 680, height: 60),
@@ -57,7 +60,8 @@ final class SearchPanel {
     }
 
     func show() {
-        guard let screen = NSScreen.main else { return }
+        let mouseLocation = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) ?? NSScreen.main ?? NSScreen.screens[0]
         let screenFrame = screen.visibleFrame
         let panelWidth: CGFloat = 680
         let x = screenFrame.origin.x + (screenFrame.width - panelWidth) / 2
