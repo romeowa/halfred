@@ -400,6 +400,18 @@ struct CommandsTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Description
+            HStack {
+                Text("팔레트에서 키워드로 실행할 수 있는 명령어들을 관리합니다. 드래그하여 순서를 변경할 수 있습니다.")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textMuted)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
+            .background(Theme.background)
+
             List {
                 ForEach(commandRegistry.commands) { command in
                     CommandRow(
@@ -601,14 +613,17 @@ struct CommandEditView: View {
                             TypeChip(label: "Shell", icon: "terminal.fill", type: "shell", selected: $command.type)
                             TypeChip(label: "Open", icon: "folder.fill", type: "open", selected: $command.type)
                         }
+                        Text(typeDescription)
+                            .font(.system(size: 11))
+                            .foregroundColor(Theme.textMuted)
                     }
 
-                    DarkTextField(label: "KEYWORD", text: $command.keyword, placeholder: "e.g. g, google, gg")
-                    DarkTextField(label: "NAME", text: $command.name, placeholder: "e.g. Google Search")
+                    DarkTextField(label: "KEYWORD", description: "팔레트에서 입력할 단축 키워드 (쉼표로 여러 개 등록 가능)", text: $command.keyword, placeholder: "e.g. g, google, gg")
+                    DarkTextField(label: "NAME", description: "검색 결과에 표시될 이름", text: $command.name, placeholder: "e.g. Google Search")
 
                     switch command.type {
                     case "web":
-                        DarkTextField(label: "URL", text: Binding(
+                        DarkTextField(label: "URL", description: "{query}를 넣으면 검색어로 치환됩니다", text: Binding(
                             get: { command.url ?? "" },
                             set: { command.url = $0.isEmpty ? nil : $0 }
                         ), placeholder: "https://google.com/search?q={query}")
@@ -621,12 +636,12 @@ struct CommandEditView: View {
                             appScanner: appScanner
                         )
                     case "shell":
-                        DarkTextField(label: "SCRIPT", text: Binding(
+                        DarkTextField(label: "SCRIPT", description: "실행할 셸 스크립트 또는 명령어", text: Binding(
                             get: { command.script ?? "" },
                             set: { command.script = $0.isEmpty ? nil : $0 }
                         ), placeholder: "e.g. ./runEmulator.sh")
                     case "open":
-                        DarkTextField(label: "PATH", text: Binding(
+                        DarkTextField(label: "PATH", description: "Finder에서 열 파일 또는 폴더 경로", text: Binding(
                             get: { command.path ?? "" },
                             set: { command.path = $0.isEmpty ? nil : $0 }
                         ), placeholder: "e.g. ~/Projects/myapp.xcodeproj")
@@ -676,6 +691,16 @@ struct CommandEditView: View {
         .frame(width: 440)
         .background(Theme.background)
         .preferredColorScheme(.dark)
+    }
+
+    private var typeDescription: String {
+        switch command.type {
+        case "web": return "URL을 열거나 검색어를 전달하는 웹 명령어"
+        case "app": return "설치된 앱을 바로 실행하는 명령어"
+        case "shell": return "터미널 셸 스크립트를 실행하는 명령어"
+        case "open": return "파일이나 폴더를 Finder에서 여는 명령어"
+        default: return ""
+        }
     }
 }
 
@@ -918,15 +943,23 @@ struct AppPickerField: View {
 
 struct DarkTextField: View {
     let label: String
+    var description: String? = nil
     @Binding var text: String
     let placeholder: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(Theme.textMuted)
+                    .tracking(1)
+                if let description {
+                    Text(description)
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textMuted)
+                }
+            }
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))

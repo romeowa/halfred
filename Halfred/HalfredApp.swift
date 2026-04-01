@@ -8,5 +8,8 @@ struct HalfredApp: App {
         Settings {
             EmptyView()
         }
+        .commands {
+            CommandGroup(replacing: .appTermination) { }
+        }
     }
 }
