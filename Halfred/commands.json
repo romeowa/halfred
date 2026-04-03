@@ -23,30 +23,6 @@
       "keyword": "terminal",
       "name": "Terminal",
       "appName": "Terminal"
-    },
-    {
-      "type": "app",
-      "keyword": "xcode",
-      "name": "Xcode", 
-      "appName": "Xcode"
-    },
-    {
-      "type": "app",
-      "keyword": "safari",
-      "name": "Safari",
-      "appName": "Safari"
-    },
-    {
-      "type": "app",
-      "keyword": "finder",
-      "name": "Finder",
-      "appName": "Finder"
-    },
-    {
-      "type": "shell",
-      "keyword": "run",
-      "name": "Run Emulators",
-      "script": "./runEmulator.sh"
     }
   ]
 }
