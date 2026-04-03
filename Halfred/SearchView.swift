@@ -26,6 +26,7 @@ struct SearchView: View {
     @State private var translationDirection: String = ""
     @State private var translateTask: Task<Void, Never>?
     @State private var runningApps: [NSRunningApplication] = []
+    @State private var selectedApps: Set<pid_t> = []
     @State private var pathSuggestions: [PathItem] = []
 
     private var filteredRunningApps: [NSRunningApplication] {
@@ -437,6 +438,35 @@ struct SearchView: View {
 
     // MARK: - Running Apps
 
+    private func toggleAppSelection(_ app: NSRunningApplication) {
+        let pid = app.processIdentifier
+        if selectedApps.contains(pid) {
+            selectedApps.remove(pid)
+        } else {
+            selectedApps.insert(pid)
+        }
+    }
+
+    private func selectAllApps() {
+        let apps = filteredRunningApps
+        if selectedApps.count == apps.count {
+            selectedApps.removeAll()
+        } else {
+            selectedApps = Set(apps.map { $0.processIdentifier })
+        }
+    }
+
+    private func quitSelectedApps() {
+        let appsToQuit = runningApps.filter { selectedApps.contains($0.processIdentifier) }
+        for app in appsToQuit {
+            app.terminate()
+        }
+        selectedApps.removeAll()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            refreshRunningApps()
+        }
+    }
+
     private func activateRunningApp(_ app: NSRunningApplication) {
         onDismiss()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -475,22 +505,66 @@ struct SearchView: View {
             LazyVGrid(columns: runningAppsColumns, spacing: 8) {
                 ForEach(Array(apps.enumerated()), id: \.element.processIdentifier) { index, app in
                     let isSelected = index == selectedIndex
-                    runningAppCell(app: app, isSelected: isSelected)
+                    let isChecked = selectedApps.contains(app.processIdentifier)
+                    runningAppCell(app: app, isSelected: isSelected, isChecked: isChecked)
                         .onHover { hovering in
                             if hovering { selectedIndex = index }
                         }
                         .onTapGesture {
-                            activateRunningApp(app)
+                            toggleAppSelection(app)
                         }
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
+
+            // Bottom action bar
+            if !selectedApps.isEmpty {
+                Rectangle()
+                    .fill(Theme.border)
+                    .frame(height: 1)
+
+                HStack(spacing: 10) {
+                    Button(action: { selectAllApps() }) {
+                        Text(selectedApps.count == filteredRunningApps.count ? "Deselect All" : "Select All")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Theme.textSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Theme.surfaceLight))
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    }
+
+                    Spacer()
+
+                    Button(action: { quitSelectedApps() }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 12))
+                            Text("Close (\(selectedApps.count))")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.accent))
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+            }
         }
     }
 
     @ViewBuilder
-    private func runningAppCell(app: NSRunningApplication, isSelected: Bool) -> some View {
+    private func runningAppCell(app: NSRunningApplication, isSelected: Bool, isChecked: Bool) -> some View {
         VStack(spacing: 6) {
             ZStack {
                 if let icon = app.icon {
@@ -503,7 +577,13 @@ struct SearchView: View {
                         .foregroundColor(isSelected ? Theme.accent : Theme.typeApp)
                 }
 
-                if app.isActive {
+                if isChecked {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Theme.accent)
+                        .background(Circle().fill(Color.white).frame(width: 12, height: 12))
+                        .offset(x: 16, y: -16)
+                } else if app.isActive {
                     Circle()
                         .fill(Theme.typeApp)
                         .frame(width: 8, height: 8)
@@ -522,11 +602,11 @@ struct SearchView: View {
         .padding(.horizontal, 4)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Theme.accent.opacity(0.12) : Color.clear)
+                .fill(isChecked ? Theme.accent.opacity(0.15) : isSelected ? Theme.accent.opacity(0.12) : Color.clear)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(isChecked ? Theme.accent.opacity(0.5) : isSelected ? Theme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
     }
@@ -567,6 +647,7 @@ struct SearchView: View {
         mode = newMode
         savedMode = newMode.rawValue
         selectedIndex = -1
+        selectedApps.removeAll()
         if newMode == .commands {
             updateMatches(for: query)
         } else if newMode == .runningApps {
@@ -601,10 +682,14 @@ struct SearchView: View {
             executeCommand()
 
         case .runningApps:
-            let apps = filteredRunningApps
-            let index = selectedIndex >= 0 ? selectedIndex : 0
-            guard index < apps.count else { return }
-            activateRunningApp(apps[index])
+            if !selectedApps.isEmpty {
+                quitSelectedApps()
+            } else {
+                let apps = filteredRunningApps
+                let index = selectedIndex >= 0 ? selectedIndex : 0
+                guard index < apps.count else { return }
+                activateRunningApp(apps[index])
+            }
 
         case .translate:
             if !translatedText.isEmpty {
