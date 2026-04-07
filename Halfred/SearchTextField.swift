@@ -15,6 +15,7 @@ struct SearchTextField: NSViewRepresentable {
     var onCmd2: (() -> Void)?
     var onCmd3: (() -> Void)?
     var onCmd4: (() -> Void)?
+    var onCmd5: (() -> Void)?
 
     func makeNSView(context: Context) -> NSTextField {
         let textField = TabAwareTextField()
@@ -25,6 +26,7 @@ struct SearchTextField: NSViewRepresentable {
         textField.onCmd2 = onCmd2
         textField.onCmd3 = onCmd3
         textField.onCmd4 = onCmd4
+        textField.onCmd5 = onCmd5
         textField.font = .systemFont(ofSize: 20, weight: .light)
         textField.textColor = .white
         textField.isBordered = false
@@ -68,6 +70,7 @@ struct SearchTextField: NSViewRepresentable {
             tabField.onCmd2 = onCmd2
             tabField.onCmd3 = onCmd3
             tabField.onCmd4 = onCmd4
+            tabField.onCmd5 = onCmd5
         }
     }
 
@@ -130,6 +133,7 @@ struct MultilineSearchTextField: NSViewRepresentable {
     var onCmd2: (() -> Void)?
     var onCmd3: (() -> Void)?
     var onCmd4: (() -> Void)?
+    var onCmd5: (() -> Void)?
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = TabAwareTextView()
@@ -138,6 +142,7 @@ struct MultilineSearchTextField: NSViewRepresentable {
         textView.onCmd2 = onCmd2
         textView.onCmd3 = onCmd3
         textView.onCmd4 = onCmd4
+        textView.onCmd5 = onCmd5
         textView.onEscape = onEscape
         textView.font = .systemFont(ofSize: 20, weight: .light)
         textView.textColor = .white
@@ -186,6 +191,7 @@ struct MultilineSearchTextField: NSViewRepresentable {
         textView.onCmd2 = onCmd2
         textView.onCmd3 = onCmd3
         textView.onCmd4 = onCmd4
+        textView.onCmd5 = onCmd5
         textView.onEscape = onEscape
         textView.placeholderString = text.isEmpty ? placeholder : nil
 
@@ -240,6 +246,7 @@ final class TabAwareTextField: NSTextField {
     var onCmd2: (() -> Void)?
     var onCmd3: (() -> Void)?
     var onCmd4: (() -> Void)?
+    var onCmd5: (() -> Void)?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if event.modifierFlags.contains(.command) {
@@ -247,6 +254,7 @@ final class TabAwareTextField: NSTextField {
             if event.charactersIgnoringModifiers == "2" { onCmd2?(); return true }
             if event.charactersIgnoringModifiers == "3" { onCmd3?(); return true }
             if event.charactersIgnoringModifiers == "4" { onCmd4?(); return true }
+            if event.charactersIgnoringModifiers == "5" { onCmd5?(); return true }
         }
         return super.performKeyEquivalent(with: event)
     }
@@ -257,6 +265,7 @@ final class TabAwareTextView: NSTextView {
     var onCmd2: (() -> Void)?
     var onCmd3: (() -> Void)?
     var onCmd4: (() -> Void)?
+    var onCmd5: (() -> Void)?
     var onEscape: (() -> Void)?
     var placeholderString: String?
 
@@ -266,6 +275,7 @@ final class TabAwareTextView: NSTextView {
             if event.charactersIgnoringModifiers == "2" { onCmd2?(); return true }
             if event.charactersIgnoringModifiers == "3" { onCmd3?(); return true }
             if event.charactersIgnoringModifiers == "4" { onCmd4?(); return true }
+            if event.charactersIgnoringModifiers == "5" { onCmd5?(); return true }
         }
         return super.performKeyEquivalent(with: event)
     }
