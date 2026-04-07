@@ -1,6 +1,7 @@
 import AppKit
 import Carbon
 import SwiftUI
+import UserNotifications
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -20,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupHotkey()
         clipboardManager.startMonitoring()
         WindowManager.promptAccessibilityOnFirstLaunch()
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     private func setupCommandRegistry() {

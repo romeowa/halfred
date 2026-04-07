@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UserNotifications
 
 // MARK: - Timer Manager (multi-instance)
 
@@ -145,10 +146,25 @@ final class TimerViewModel: ObservableObject {
     }
 
     private func playAlarm() {
+        // Sound
         NSSound(named: .init("Funk"))?.play()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             NSSound(named: .init("Funk"))?.play()
         }
+
+        // System notification
+        let content = UNMutableNotificationContent()
+        content.title = name ?? "Timer"
+        let h = totalSeconds / 3600, m = (totalSeconds % 3600) / 60, s = totalSeconds % 60
+        var parts: [String] = []
+        if h > 0 { parts.append("\(h)h") }
+        if m > 0 { parts.append("\(m)m") }
+        if s > 0 { parts.append("\(s)s") }
+        content.body = "\(parts.joined(separator: " ")) timer is done."
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 
     var progress: Double {
@@ -157,8 +173,12 @@ final class TimerViewModel: ObservableObject {
     }
 
     var timeString: String {
-        let m = remainingSeconds / 60
+        let h = remainingSeconds / 3600
+        let m = (remainingSeconds % 3600) / 60
         let s = remainingSeconds % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        }
         return String(format: "%02d:%02d", m, s)
     }
 }
@@ -335,8 +355,9 @@ struct TimerContentView: View {
                     .opacity(viewModel.progress > 0.02 ? 1 : 0)
 
                 VStack(spacing: 2) {
+                    let hasHours = viewModel.remainingSeconds >= 3600
                     Text(viewModel.timeString)
-                        .font(.system(size: 26 * scale, weight: .semibold, design: .monospaced))
+                        .font(.system(size: (hasHours ? 18 : 26) * scale, weight: .semibold, design: .monospaced))
                         .foregroundColor(t.textPrimary)
 
                     if viewModel.isPaused {
