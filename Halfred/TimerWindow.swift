@@ -331,23 +331,26 @@ struct TimerContentView: View {
     private func timerView(ringSize: CGFloat, ringWidth: CGFloat, scale: CGFloat) -> some View {
         VStack(spacing: 10 * scale) {
             ZStack {
+                // Track ring
                 Circle()
-                    .stroke(t.surfaceLight.opacity(0.5), lineWidth: ringWidth)
+                    .stroke(t.border, lineWidth: ringWidth)
                     .frame(width: ringSize, height: ringSize)
 
+                // Progress ring
                 Circle()
                     .trim(from: 0, to: viewModel.progress)
                     .stroke(
-                        progressGradient,
-                        style: StrokeStyle(lineWidth: ringWidth, lineCap: .round)
+                        t.accent,
+                        style: StrokeStyle(lineWidth: ringWidth + 2 * scale, lineCap: .round)
                     )
                     .frame(width: ringSize, height: ringSize)
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 1), value: viewModel.progress)
+                    .shadow(color: t.accent.opacity(0.4), radius: 4)
 
                 // Glow at tip
                 Circle()
-                    .fill(t.accent.opacity(0.3))
+                    .fill(t.accent.opacity(0.5))
                     .frame(width: ringWidth * 3, height: ringWidth * 3)
                     .blur(radius: 4)
                     .offset(tipOffset(ringSize: ringSize))
@@ -423,8 +426,9 @@ struct TimerContentView: View {
                     .fill(t.success.opacity(0.1))
                     .frame(width: ringSize, height: ringSize)
                 Circle()
-                    .stroke(t.success.opacity(0.3), lineWidth: ringWidth)
+                    .stroke(t.success.opacity(0.5), lineWidth: ringWidth)
                     .frame(width: ringSize, height: ringSize)
+                    .shadow(color: t.success.opacity(0.3), radius: 4)
 
                 VStack(spacing: 4) {
                     Image(systemName: "checkmark")
@@ -443,15 +447,6 @@ struct TimerContentView: View {
     }
 
     // MARK: - Helpers
-
-    private var progressGradient: AngularGradient {
-        AngularGradient(
-            gradient: Gradient(colors: [t.accent.opacity(0.6), t.accent]),
-            center: .center,
-            startAngle: .degrees(0),
-            endAngle: .degrees(360 * viewModel.progress)
-        )
-    }
 
     private func tipOffset(ringSize: CGFloat) -> CGSize {
         let angle = Angle.degrees(360 * viewModel.progress - 90)
