@@ -7,6 +7,7 @@ final class CommandRegistry: ObservableObject {
         "app": AppLaunchCommand(),
         "shell": ShellCommand(),
         "open": OpenCommand(),
+        "cursor": CursorSizeCommand(),
     ]
 
     private var userConfigURL: URL {

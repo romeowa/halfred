@@ -27,6 +27,7 @@
 		A645727DFC3A003FAE3247AB /* AppScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDDE64D08C623765B6365922 /* AppScanner.swift */; };
 		BA3A6DE0F5C0449C3AB109B8 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C75B759FF77649A742F803E /* SearchView.swift */; };
 		C253D944B721F5141D289551 /* OpenCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E0D8A2D38FA6431CC4818B /* OpenCommand.swift */; };
+		CD4DE78CBF814D7F0C7D393F /* CursorSizeCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2329A3E73A8C81D657CFDC30 /* CursorSizeCommand.swift */; };
 		CEE947F9FF93D956034F8269 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE333BB0AA24B129F168EAAE /* ClipboardHistoryView.swift */; };
 		D0A8AA6263C10D85CF3FA76C /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91462F9802605B991A9E1402 /* SettingsWindow.swift */; };
 		D1DB782C1F25C83263BEE38E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2008BC2115FFE94639A200 /* SettingsView.swift */; };
@@ -42,6 +43,7 @@
 		142E25647ADFB49B93235ABD /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		1F09DEC3239984BE55A52475 /* CommandParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandParser.swift; sourceTree = "<group>"; };
 		22BDAA27AF41494F24C1E184 /* CommandRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRegistry.swift; sourceTree = "<group>"; };
+		2329A3E73A8C81D657CFDC30 /* CursorSizeCommand.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CursorSizeCommand.swift; sourceTree = "<group>"; };
 		2C2CD1BD1844D937EA1DE8C1 /* Halfred.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Halfred.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		37D497E8505F18444B13A812 /* commands.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = commands.json; sourceTree = "<group>"; };
 		3B9CA129C3706EC6AF58AE0D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 				80E0D8A2D38FA6431CC4818B /* OpenCommand.swift */,
 				C61D89CD4573608F53593762 /* ShellCommand.swift */,
 				45BE075E6BB478784FD4648A /* WebSearchCommand.swift */,
+				2329A3E73A8C81D657CFDC30 /* CursorSizeCommand.swift */,
 			);
 			path = Commands;
 			sourceTree = "<group>";
@@ -247,6 +250,7 @@
 				251A55690A2E2E97A1C8E30F /* WindowManager.swift in Sources */,
 				D794D34BDD4B5A5AD5AF3A99 /* TimerView.swift in Sources */,
 				4364D9E8DAD65989836AF9B6 /* TimerWindow.swift in Sources */,
+				CD4DE78CBF814D7F0C7D393F /* CursorSizeCommand.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
