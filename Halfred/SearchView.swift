@@ -6,7 +6,6 @@ enum SearchMode: String {
     case commands
     case runningApps
     case translate
-    case timer
 }
 
 struct SearchView: View {
@@ -49,8 +48,6 @@ struct SearchView: View {
             return filteredRunningApps.count
         case .translate:
             return translatedText.isEmpty ? 0 : 1
-        case .timer:
-            return 0
         }
     }
 
@@ -72,8 +69,7 @@ struct SearchView: View {
                         onCmd1: { switchMode(.commands) },
                         onCmd2: { switchMode(.clipboard) },
                         onCmd3: { switchMode(.runningApps) },
-                        onCmd4: { switchMode(.translate) },
-                        onCmd5: { switchMode(.timer) }
+                        onCmd4: { switchMode(.translate) }
                     )
                     .frame(minHeight: 60, maxHeight: 120)
                     .onChange(of: query) { _, _ in
@@ -94,13 +90,13 @@ struct SearchView: View {
                 .padding(.vertical, 14)
             } else {
                 HStack(spacing: 12) {
-                    Image(systemName: mode == .clipboard ? "clipboard" : mode == .runningApps ? "macwindow.on.rectangle" : mode == .timer ? "timer" : "magnifyingglass")
+                    Image(systemName: mode == .clipboard ? "clipboard" : mode == .runningApps ? "macwindow.on.rectangle" : "magnifyingglass")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Theme.accent)
 
                     SearchTextField(
                         text: $query,
-                        placeholder: mode == .clipboard ? "Search clipboard..." : mode == .runningApps ? "Search running apps..." : mode == .timer ? "3:30 점심시간 (min:sec name)" : "Type a command...",
+                        placeholder: mode == .clipboard ? "Search clipboard..." : mode == .runningApps ? "Search running apps..." : "Type a command...",
                         onSubmit: { executeAction() },
                         onTab: { handleTab() },
                         onEscape: { onDismiss() },
@@ -111,8 +107,7 @@ struct SearchView: View {
                         onCmd1: { switchMode(.commands) },
                         onCmd2: { switchMode(.clipboard) },
                         onCmd3: { switchMode(.runningApps) },
-                        onCmd4: { switchMode(.translate) },
-                        onCmd5: { switchMode(.timer) }
+                        onCmd4: { switchMode(.translate) }
                     )
                     .onChange(of: query) { _, newValue in
                         if mode == .commands {
@@ -149,9 +144,6 @@ struct SearchView: View {
                 }
                 modeButton(title: "Translate", icon: "textformat", shortcut: "⌘4", isSelected: mode == .translate) {
                     switchMode(.translate)
-                }
-                modeButton(title: "Timer", icon: "timer", shortcut: "⌘5", isSelected: mode == .timer) {
-                    switchMode(.timer)
                 }
                 Spacer()
             }
@@ -264,13 +256,6 @@ struct SearchView: View {
                     .frame(height: 1)
 
                 translateContent()
-
-            case .timer:
-                Rectangle()
-                    .fill(Theme.border)
-                    .frame(height: 1)
-
-                TimerPresetView(onDismiss: onDismiss)
             }
         }
         .background(Theme.background)
@@ -714,30 +699,6 @@ struct SearchView: View {
             } else {
                 triggerTranslation(for: query)
             }
-
-        case .timer:
-            let input = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !input.isEmpty else { return }
-            // Parse "3:30 점심시간" or "3:30" or "5 점심시간" or "90"
-            let parts = input.split(separator: " ", maxSplits: 1)
-            let timePart = String(parts[0])
-            let namePart = parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : nil
-
-            var totalSeconds = 0
-            if timePart.contains(":") {
-                let comps = timePart.split(separator: ":")
-                let m = Int(comps[0]) ?? 0
-                let s = comps.count > 1 ? Int(comps[1]) ?? 0 : 0
-                totalSeconds = m * 60 + s
-            } else {
-                // Bare number = minutes
-                let m = Int(timePart) ?? 0
-                totalSeconds = m * 60
-            }
-            guard totalSeconds > 0 else { return }
-            TimerManager.shared.startNew(seconds: totalSeconds, name: namePart)
-            query = ""
-            onDismiss()
         }
     }
 

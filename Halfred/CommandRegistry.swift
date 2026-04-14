@@ -8,6 +8,7 @@ final class CommandRegistry: ObservableObject {
         "shell": ShellCommand(),
         "open": OpenCommand(),
         "cursor": CursorSizeCommand(),
+        "timer": TimerCommand(),
     ]
 
     private var userConfigURL: URL {
