@@ -293,6 +293,7 @@ struct SearchView: View {
             let restored = SearchMode(rawValue: savedMode) ?? .commands
             mode = restored
             copiedHint = false
+            appScanner.scan()
             matchingCommands = restored == .commands ? commandRegistry.allCommands() : []
             matchingApps = []
             pathSuggestions = []
